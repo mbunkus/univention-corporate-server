@@ -1,0 +1,18 @@
+[Unit]
+Description=Univention Management Console Server
+After=network.target remote-fs.target
+Wants=slapd.service
+
+[Service]
+Type=forking
+PIDFile=/var/run/umc-server.pid
+ExecStart=/usr/sbin/univention-management-console-server start
+ExecStop=/usr/sbin/univention-management-console-server stop
+ExecReload=/usr/sbin/univention-management-console-server reload
+User=root
+Group=root
+StandardOutput=/var/log/univention/management-console-server.log
+StandardError=/var/log/univention/management-console-server.log
+
+[Install]
+WantedBy=multi-user.target
