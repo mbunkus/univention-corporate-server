@@ -614,9 +614,7 @@ run_tests () {
 		echo "-----------------------------------------------------------------------------------"
 		return 1
 	fi
-	if [ "$COVERAGE_REPORT" = "true" ]; then
-		GENERATE_COVERAGE_REPORT="--with-coverage --coverage-show-missing --coverage-output-directory=/var/log/univention/coverage"
-	fi
+	GENERATE_COVERAGE_REPORT="--with-coverage --coverage-show-missing --coverage-output-directory=/var/log/univention/coverage"
 	dpkg-query -W -f '${Status}\t${binary:Package}\t${Version}\n' > "packages-under-test.log"
 
 	# check is ucs-test run is allowed
@@ -625,7 +623,7 @@ run_tests () {
 		return 0
 	fi
 
-	LANG=de_DE.UTF-8 ucs-test -E dangerous -F junit -l "ucs-test.log" -p producttest $GENERATE_COVERAGE_REPORT "$@"
+	LANG=de_DE.UTF-8 python3 /usr/sbin/ucs-test -E dangerous -F junit -l "ucs-test.log" -p producttest $GENERATE_COVERAGE_REPORT "$@"
 }
 
 run_tests_with_parameters () {
