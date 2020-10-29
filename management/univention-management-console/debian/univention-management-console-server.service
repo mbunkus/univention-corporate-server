@@ -6,9 +6,8 @@ Wants=slapd.service
 [Service]
 Type=forking
 PIDFile=/var/run/umc-server.pid
-ExecStart=/usr/sbin/univention-management-console-server start
-ExecStop=/usr/sbin/univention-management-console-server stop
-ExecReload=/usr/sbin/univention-management-console-server reload
+ExecStart=/usr/sbin/univention-management-console-server
+ExecReload=/bin/kill -SIGUSR1 $MAINPID
 User=root
 Group=root
 StandardOutput=/var/log/univention/management-console-server.log
