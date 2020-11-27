@@ -310,6 +310,27 @@ class Users(UDMBase):
 
 		return {'username': username, 'lastname': lastname}
 
+	def copy(self, user, username='', lastname='', password='univention', **kwargs):
+		if username == '':
+			username = uts.random_string()
+		self.selenium.click_checkbox_of_grid_entry(user)
+		self.selenium.click_text(_('more'))
+		self.selenium.click_text(_('Copy'))
+		try:
+			self.selenium.wait_for_text(_('Container'), timeout=1)
+			self.selenium.click_text(_('Next'))
+			self.selenium.wait_until_all_standby_animations_disappeared()
+		except TimeoutException:
+			pass
+		self.selenium.enter_input('username', username)
+		self.selenium.enter_input('lastname', lastname or uts.random_string())
+		self.selenium.enter_input('password_1', password)
+		self.selenium.enter_input('password_2', password)
+		for key, value in kwargs.items():
+			self.selenium.enter_input(key, value)
+		self.selenium.click_text(_('Create user'))
+		return username
+
 	def _get_search_value(self, user):
 		return user['username']
 

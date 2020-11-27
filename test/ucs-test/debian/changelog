@@ -1,3 +1,9 @@
+ucs-test (10.0.1-39) unstable; urgency=medium
+
+  * Bug #52144: Revision of selenium test 153_udm_check_properties_of_copied_users.py
+
+ -- Christian Castens <castens@univention.de>  Tue, 05 Jan 2021 14:33:36 +0100
+
 ucs-test (10.0.1-38) unstable; urgency=medium
 
   * Bug #51804: Revert the workaround in 96rename* to test if the 
