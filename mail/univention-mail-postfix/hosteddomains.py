@@ -32,6 +32,7 @@
 
 from __future__ import absolute_import
 
+from listener import SetUID
 import listener
 import univention.config_registry
 import re
@@ -61,9 +62,6 @@ def handler(dn, new, old):
 
 	# if something changed then set UCR variable
 	if old_hosteddomains != hosteddomains:
-		try:
-			listener.setuid(0)
+		with SetUID(0):
 			univention.debug.debug(univention.debug.LISTENER, univention.debug.INFO, "hosteddomains: %s" % u'mail/hosteddomains=%s' % ' '.join(hosteddomains))
 			univention.config_registry.handler_set([u'mail/hosteddomains=%s' % ' '.join(hosteddomains)])
-		finally:
-			listener.unsetuid()

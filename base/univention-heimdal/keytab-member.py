@@ -32,6 +32,7 @@
 
 from __future__ import absolute_import
 
+from listener import SetUID
 import listener
 import os
 import pwd
@@ -59,8 +60,7 @@ def handler(dn, new, old):
 		return
 
 	if server_role == 'domaincontroller_master':
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			if old:
 				cn = old['cn'][0].decode('UTF-8')
 				ud.debug(ud.LISTENER, ud.PROCESS, 'Purging krb5.keytab of %s' % (cn,))
@@ -81,5 +81,3 @@ def handler(dn, new, old):
 					os.chmod(ktab, 0o660)
 				except (KeyError, EnvironmentError):
 					pass
-		finally:
-			listener.unsetuid()

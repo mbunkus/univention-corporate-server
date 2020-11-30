@@ -32,6 +32,7 @@
 
 from __future__ import absolute_import
 
+from listener import SetUID
 import listener
 import os
 import time
@@ -76,12 +77,9 @@ def clean():
 	if samba4_role.upper() in ('DC', 'RODC'):
 		return
 
-	listener.setuid(0)
-	try:
+	with SetUID(0):
 		if os.path.exists(K5TAB):
 			os.unlink(K5TAB)
-	finally:
-		listener.unsetuid()
 
 
 def handler(dn, new, old):
@@ -95,8 +93,7 @@ def handler(dn, new, old):
 
 	if server_role == 'memberserver':
 		ud.debug(ud.LISTENER, ud.PROCESS, 'Fetching %s from %s' % (K5TAB, ldap_master))
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			if os.path.exists(K5TAB):
 				os.remove(K5TAB)
 			count = 0
@@ -111,15 +108,10 @@ def handler(dn, new, old):
 					time.sleep(2)
 			os.chown(K5TAB, 0, 0)
 			os.chmod(K5TAB, 0o600)
-		finally:
-			listener.unsetuid()
 	else:
 		ud.debug(ud.LISTENER, ud.PROCESS, 'Exporting %s on %s' % (K5TAB, server_role))
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			if old:
 				call(['ktutil', 'remove', '-p', old['krb5PrincipalName'][0].decode('UTF-8')])
 			if new:
 				call(['kadmin', '-l', 'ext', new['krb5PrincipalName'][0].decode('UTF-8')])
-		finally:
-			listener.unsetuid()

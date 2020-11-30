@@ -46,6 +46,7 @@ import univention.debug as ud
 import univention.lib.policy_result
 import univention.uldap
 
+from listener import SetUID
 import listener
 
 name = 'quota'
@@ -203,8 +204,7 @@ def _get_all_quota_references(dn):
 def handler(dn, new, old):
 	# type: (str, Optional[Dict[str, List[bytes]]], Optional[Dict[str, List[bytes]]]) -> None
 	ud.debug(ud.LISTENER, ud.INFO, 'Run handler for dn: %r' % dn)
-	listener.setuid(0)
-	try:
+	with SetUID(0):
 		if _is_share(new, old):
 			ud.debug(ud.LISTENER, ud.INFO, '%r: is share' % dn)
 			if _is_share_used_on_this_server(new, old):
@@ -225,14 +225,11 @@ def handler(dn, new, old):
 			if _is_container_change_relevant(new, old):
 				_add_all_shares_below_this_container_to_dn_list(dn)
 			ud.debug(ud.LISTENER, ud.INFO, '%r: is container (done)' % dn)
-	finally:
-		listener.unsetuid()
 
 
 def clean():
 	# type: () -> None
-	listener.setuid(0)
-	try:
+	with SetUID(0):
 		if os.path.exists(SHARE_CACHE_DIR):
 			for filename in os.listdir(SHARE_CACHE_DIR):
 				if filename == 'todo':
@@ -241,14 +238,12 @@ def clean():
 		if os.path.exists(SHARE_CACHE_TODO_DIR):
 			for filename in os.listdir(SHARE_CACHE_TODO_DIR):
 				os.remove(os.path.join(SHARE_CACHE_TODO_DIR, filename))
-	finally:
-		listener.unsetuid()
 
 
 def postrun():
 	# type: () -> None
 	lo = None
-	try:
+	with SetUID(0):
 		for dn in os.listdir(SHARE_CACHE_TODO_DIR):
 			filename = os.path.join(SHARE_CACHE_TODO_DIR, dn)
 			if not lo:
@@ -268,5 +263,3 @@ def postrun():
 			os.remove(filename)
 		if lo:
 			lo.lo.unbind()
-	finally:
-		listener.unsetuid()

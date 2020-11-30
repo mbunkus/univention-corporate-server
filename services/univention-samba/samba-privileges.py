@@ -32,7 +32,7 @@
 
 from __future__ import absolute_import
 
-import listener
+from listener import SetUID
 import univention.debug as ud
 import tdb
 
@@ -99,11 +99,9 @@ def handler(dn, new, old):
 			addPrivileges(sid, newPrivs)
 
 
+@SetUID(0)
 def addPrivileges(sambaSID, privileges):
 	# type: (bytes, list) -> None
-	listener.setuid(0)
-
-	try:
 		tdbKey = b'PRIV_%s\x00' % (sambaSID,)
 		tdbFile = tdb.Tdb(SAMBA_POLICY_TDB)
 		tdbFile.lock_all()
@@ -124,15 +122,11 @@ def addPrivileges(sambaSID, privileges):
 		tdbFile[tdbKey] = privs
 		tdbFile.unlock_all()
 		tdbFile.close()
-	finally:
-		listener.unsetuid()
 
 
+@SetUID(0)
 def removePrivileges(sambaSID, privileges):
 	# type: (bytes, list) -> None
-	listener.setuid(0)
-
-	try:
 		tdbKey = b'PRIV_%s\x00' % (sambaSID,)
 		tdbFile = tdb.Tdb(SAMBA_POLICY_TDB)
 		tdbFile.lock_all()
@@ -156,5 +150,3 @@ def removePrivileges(sambaSID, privileges):
 
 		tdbFile.unlock_all()
 		tdbFile.close()
-	finally:
-		listener.unsetuid()

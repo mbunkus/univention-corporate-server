@@ -32,6 +32,7 @@
 
 from __future__ import absolute_import
 
+from listener import SetUID
 import listener
 import univention.config_registry
 
@@ -52,8 +53,7 @@ def handler(dn, new, old):
 	if ucr['server/role'] == 'domaincontroller_master':
 		return
 
-	listener.setuid(0)
-	try:
+	with SetUID(0):
 		if 'univentionServerRole' in new:
 			try:
 				domain = new['associatedDomain'][0].decode('UTF-8')
@@ -66,8 +66,6 @@ def handler(dn, new, old):
 			except LookupError:
 				domain = ucr['domainname']
 			remove_ldap_server(ucr, old['cn'][0].decode('UTF-8'), domain, old['univentionServerRole'][0].decode('UTF-8'))
-	finally:
-		listener.unsetuid()
 
 
 def add_ldap_server(ucr, name, domain, role):

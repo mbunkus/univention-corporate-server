@@ -32,6 +32,7 @@
 
 from __future__ import absolute_import
 
+from listener import SetUID
 import listener
 import os
 import re
@@ -60,8 +61,7 @@ def readPluginConfig():
 
 		univention.debug.debug(univention.debug.LISTENER, univention.debug.INFO, 'NAGIOS-CLIENT: updating plugin config')
 
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			for fn in os.listdir(__pluginconfdir):
 				with open(os.path.join(__pluginconfdir, fn), 'rb') as fp:
 					content = fp.read()
@@ -71,8 +71,6 @@ def readPluginConfig():
 					if mcmdname and mcmdline:
 						__pluginconfig[mcmdname.group(1)] = mcmdline.group(1)
 						univention.debug.debug(univention.debug.LISTENER, univention.debug.INFO, 'NAGIOS-CLIENT: read configline for plugin %s ==> %s' % (mcmdname.group(1), mcmdline.group(1)))
-		finally:
-			listener.unsetuid()
 
 
 def replaceArguments(cmdline, args):
@@ -107,8 +105,7 @@ def writeConfig(fqdn, new):
 	cmdline = re.sub(r'\$HOSTADDRESS\$'.encode('ASCII'), fqdn, cmdline)
 	cmdline = re.sub(r'\$HOSTNAME\$'.encode('ASCII'), fqdn, cmdline)
 
-	listener.setuid(0)
-	try:
+	with SetUID(0):
 		filename = os.path.join(__confdir, "%s.cfg" % name)
 		fp = open(filename, 'w')
 		fp.write('# Warning: This file is auto-generated and might be overwritten.\n')
@@ -121,19 +118,14 @@ def writeConfig(fqdn, new):
 		fp.close()
 
 		univention.debug.debug(univention.debug.LISTENER, univention.debug.INFO, 'NAGIOS-CLIENT: service %s written' % name)
-	finally:
-		listener.unsetuid()
 
 
 def removeConfig(name):
 	# type: (str) -> None
 	filename = os.path.join(__confdir, "%s.cfg" % name)
-	listener.setuid(0)
-	try:
+	with SetUID(0):
 		if os.path.exists(filename):
 			os.unlink(filename)
-	finally:
-		listener.unsetuid()
 
 
 def handler(dn, new, old):
@@ -178,16 +170,13 @@ def handler(dn, new, old):
 			writeConfig(fqdn, new)
 
 
+@SetUID(0)
 def initialize():
 	# type: () -> None
 	dirname = '/etc/nagios/nrpe.univention.d'
 
 	if not os.path.exists(dirname):
-		listener.setuid(0)
-		try:
 			os.mkdir(dirname)
-		finally:
-			listener.unsetuid()
 
 
 def deleteTree(dirname):
@@ -203,15 +192,12 @@ def deleteTree(dirname):
 		os.rmdir(dirname)
 
 
+@SetUID(0)
 def clean():
 	# type: () -> None
 	dirname = '/etc/nagios/nrpe.univention.d'
 	if os.path.exists(dirname):
-		listener.setuid(0)
-		try:
 			deleteTree(dirname)
-		finally:
-			listener.unsetuid()
 
 
 def postrun():

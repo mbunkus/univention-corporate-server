@@ -36,7 +36,7 @@ from __future__ import absolute_import
 import os
 import os.path
 
-import listener
+from listener import SetUID
 import six
 from six.moves import cPickle as pickle
 import univention.debug as ud
@@ -116,21 +116,15 @@ def checkAndSet(new, old):
 		ucr_value = ucr.get(unset_ucr_key)
 		if ucr_value:
 			ud.debug(ud.LISTENER, ud.PROCESS, "%s: ucr unset %s=%s" % (name, unset_ucr_key, ucr_value))
-			listener.setuid(0)
-			try:
+			with SetUID(0):
 				univention.config_registry.handler_unset([unset_ucr_key])
 				return default_name
-			finally:
-				listener.unsetuid()
 	else:
 		ucr_key_value = "%s/%s=%s" % (ucr_base, default_name_lower, obj_name)
 		ud.debug(ud.LISTENER, ud.PROCESS, "%s: ucr set %s" % (name, ucr_key_value))
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			univention.config_registry.handler_set([ucr_key_value])
 			return default_name
-		finally:
-			listener.unsetuid()
 
 
 def no_relevant_change(new, old):
@@ -226,6 +220,7 @@ def handler(dn, new, old, command):
 			modified_default_names.append(changed_default_name)
 
 
+@SetUID(0)
 def postrun():
 	# type: () -> None
 	if not modified_default_names:
@@ -235,7 +230,6 @@ def postrun():
 	if not os.path.isdir(hook_dir):
 		return
 
-	listener.setuid(0)
 	try:
 		for filename in os.listdir(hook_dir):
 			filename_parts = os.path.splitext(filename)
@@ -253,4 +247,3 @@ def postrun():
 					hook_module.postrun(modified_default_names)
 	finally:
 		del modified_default_names[:]
-		listener.unsetuid()

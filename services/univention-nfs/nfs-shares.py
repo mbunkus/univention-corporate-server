@@ -32,6 +32,7 @@
 
 from __future__ import absolute_import
 
+from listener import SetUID
 import listener
 import os
 import re
@@ -118,16 +119,13 @@ def handler(dn, new, old, command):
 
 		_write(lines)
 
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			# object was renamed
 			if not old and oldObject and command == "a":
 				old = oldObject
 			ret = univention.lib.listenerSharePath.createOrRename(old, new, listener.configRegistry)
 			if ret:
 				ud.debug(ud.LISTENER, ud.ERROR, "%s: rename/create of sharePath for %s failed (%s)" % (name, dn, ret))
-		finally:
-			listener.unsetuid()
 	else:
 		_write(lines)
 
@@ -144,15 +142,12 @@ def _read(keep=lambda match: True):
 		return [line.strip() for line in fp if keep(__comment_pattern.match(line))]
 
 
+@SetUID(0)
 def _write(lines):
 	# type: (list) -> None
-	listener.setuid(0)
-	try:
 		ud.debug(ud.LISTENER, ud.PROCESS, 'Writing /etc/exports with %d lines' % (len(lines),))
 		with open(__exports, 'w') as fp:
 			fp.write('\n'.join(lines) + '\n')
-	finally:
-		listener.unsetuid()
 
 
 def _exports_escape(text):

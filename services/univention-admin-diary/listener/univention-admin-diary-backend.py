@@ -32,6 +32,7 @@
 
 from __future__ import absolute_import
 
+from listener import SetUID
 import listener
 import subprocess
 
@@ -44,10 +45,9 @@ attributes = ['univentionService']
 service_name = b"Admin Diary Backend"
 
 
+@SetUID(0)
 def handler(dn, new, old):
 	# type: (str, dict, dict) -> None
-	listener.setuid(0)
-	try:
 		change = False
 		new_has_service = service_name in new.get('univentionService', [])
 		old_has_service = service_name in old.get('univentionService', [])
@@ -82,5 +82,3 @@ def handler(dn, new, old):
 
 		if change:
 			subprocess.call(['invoke-rc.d', 'rsyslog', 'try-restart'])
-	finally:
-		listener.unsetuid()

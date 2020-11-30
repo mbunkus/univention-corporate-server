@@ -31,7 +31,8 @@
 # <https://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
-import listener
+
+from listener import SetUID
 import os
 import json
 import pwd
@@ -48,11 +49,9 @@ uid = pwd.getpwnam("samlcgi").pw_uid
 gid = grp.getgrnam("samlcgi").gr_gid
 
 
+@SetUID(0)
 def handler(dn, new, old):
 		# type: (str, dict, dict) -> None
-	listener.setuid(0)
-
-	try:
 		if os.path.exists(path):
 			with open(path) as group_file:
 				data = json.load(group_file)
@@ -89,5 +88,3 @@ def handler(dn, new, old):
 		shutil.move(tmp_path, path)
 		os.chmod(path, 0o600)
 		os.chown(path, uid, gid)
-	finally:
-		listener.unsetuid()

@@ -32,6 +32,7 @@
 
 from __future__ import absolute_import
 
+from listener import SetUID
 import listener
 import os
 import time
@@ -203,11 +204,8 @@ def handler(dn, new, old):
 			if printer_is_restricted and not listener.configRegistry.is_false('cups/automaticrestrict', False):
 				printer_list.remove(printer_name)
 				keyval = 'cups/restrictedprinters=%s' % ' '.join(printer_list)
-				listener.setuid(0)
-				try:
+				with SetUID(0):
 					univention.config_registry.handler_set([keyval])
-				finally:
-					listener.unsetuid()
 
 			# Deletions done via lpadmin
 			lpadmin(['-x', old['cn'][0].decode('UTF-8')])
@@ -216,20 +214,14 @@ def handler(dn, new, old):
 		# Deletions done via editing the Samba config
 		if old.get('univentionPrinterSambaName'):
 			filename = _join_basedir_filename('/etc/samba/printers.conf.d/', old['univentionPrinterSambaName'][0].decode('UTF-8'))
-			listener.setuid(0)
-			try:
+			with SetUID(0):
 				if os.path.exists(filename):
 					os.unlink(filename)
-			finally:
-				listener.unsetuid()
 
 		filename = _join_basedir_filename('/etc/samba/printers.conf.d/', old['cn'][0].decode('UTF-8'))
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			if os.path.exists(filename):
 				os.unlink(filename)
-		finally:
-			listener.unsetuid()
 
 	if filter_match(new):
 		# Modifications done via UCR-Variables
@@ -249,11 +241,8 @@ def handler(dn, new, old):
 
 		if update_restricted_printers and not listener.configRegistry.is_false('cups/automaticrestrict', False):
 			keyval = 'cups/restrictedprinters=%s' % ' '.join(printer_list)
-			listener.setuid(0)
-			try:
+			with SetUID(0):
 				univention.config_registry.handler_set([keyval])
-			finally:
-				listener.unsetuid()
 			need_to_reload_cups = True
 
 		# Modifications done via lpadmin
@@ -346,8 +335,7 @@ def handler(dn, new, old):
 			perm = ' '.join(user_and_groups)
 
 			# samba permissions
-			listener.setuid(0)
-			try:
+			with SetUID(0):
 				with open(filename, 'w') as fp:
 					fp.write('[%s]\n' % (printername,))
 					fp.write('printer name = %s\n' % (cups_printername,))
@@ -364,19 +352,13 @@ def handler(dn, new, old):
 
 				os.chmod(filename, 0o755)
 				os.chown(filename, 0, 0)
-			finally:
-				listener.unsetuid()
 
 	if change_affects_this_host:
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			with open('/etc/samba/printers.conf.temp', 'w') as fp:
 				for f in os.listdir('/etc/samba/printers.conf.d'):
 					fp.write('include = %s\n' % os.path.join('/etc/samba/printers.conf.d', f))
 			os.rename('/etc/samba/printers.conf.temp', '/etc/samba/printers.conf')
-
-		finally:
-			listener.unsetuid()
 
 		reload_printer_restrictions()
 
@@ -400,20 +382,16 @@ def reload_cups_daemon():
 		ud.debug(ud.LISTENER, ud.PROCESS, "cups-printers: no %s to init script found")
 
 
+@SetUID(0)
 def reload_printer_restrictions():
 	# type: () -> None
-	listener.setuid(0)
-	try:
 		subprocess.call(['python3', '-m', 'univention.lib.share_restrictions'])
-	finally:
-		listener.unsetuid()
 
 
 def reload_smbd():
 	# type: () -> None
 	global reload_samba_in_postrun
-	listener.setuid(0)
-	try:
+	with SetUID(0):
 		ucr_handlers.commit(listener.configRegistry, ['/etc/samba/smb.conf'])
 		if os.path.exists('/etc/init.d/samba'):
 			subprocess.call(('/etc/init.d/samba', 'reload'))
@@ -422,26 +400,20 @@ def reload_smbd():
 			subprocess.call(('/usr/bin/pkill', '-HUP', 'smbd'))
 		else:
 			ud.debug(ud.LISTENER, ud.ERROR, "cups-printers: Cannot reload smbd: Both /etc/init.d/samba and pkill are missing")
-	finally:
-		listener.unsetuid()
 	reload_samba_in_postrun = False  # flag that this has been done.
 
 
+@SetUID(0)
 def initialize():
 	# type: () -> None
 	if not os.path.exists('/etc/samba/printers.conf.d'):
-		listener.setuid(0)
-		try:
 			os.mkdir('/etc/samba/printers.conf.d')
 			os.chmod('/etc/samba/printers.conf.d', 0o755)
-		finally:
-			listener.unsetuid()
 
 
+@SetUID(0)
 def clean():
 	# type: () -> None
-	listener.setuid(0)
-	try:
 		for f in os.listdir('/etc/samba/printers.conf.d'):
 			if os.path.exists(os.path.join('/etc/samba/printers.conf.d', f)):
 				os.unlink(os.path.join('/etc/samba/printers.conf.d', f))
@@ -449,8 +421,6 @@ def clean():
 			os.unlink('/etc/samba/printers.conf')
 			ucr_handlers.commit(listener.configRegistry, ['/etc/samba/smb.conf'])
 		os.rmdir('/etc/samba/printers.conf.d')
-	finally:
-		listener.unsetuid()
 
 
 def postrun():

@@ -38,6 +38,7 @@ import traceback
 import imaplib
 import shutil
 import tempfile
+from listener import SetUID
 try:
 	from typing import Any, Dict, List, Optional, Tuple  # noqa F401
 except ImportError:
@@ -120,25 +121,19 @@ class DovecotGlobalAclFile(object):
 			os.fchown(fileno, 0, self.dovemail_gid)
 			os.fchmod(fileno, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP)
 
-		try:
-			self.listener.setuid(0)
+		with SetUID(0):
 			if fileno:
 				set_perms(fileno)
 			else:
 				mode = 'rb' if os.path.exists(path) else 'wb'
 				with open(path, mode) as fp:
 					set_perms(fp.fileno())
-		finally:
-			self.listener.unsetuid()
 
 	def _read(self):  # type: () -> None
 		self._acls = list()
-		try:
-			self.listener.setuid(0)
+		with SetUID(0):
 			for line in open(global_acl_path, 'r'):
 				self._acls.append(DovecotFolderAclEntry.from_str(line))
-		finally:
-			self.listener.unsetuid()
 
 	def _write(self):  # type: () -> None
 		fileno, filename = tempfile.mkstemp(prefix='.global-acls')
@@ -146,11 +141,8 @@ class DovecotGlobalAclFile(object):
 			os.write(fileno, '{}\n'.format(acl).encode('UTF-8'))
 		self._fix_permissions(fileno=fileno)
 		os.close(fileno)
-		try:
-			self.listener.setuid(0)
+		with SetUID(0):
 			shutil.move(filename, global_acl_path)
-		finally:
-			self.listener.unsetuid()
 
 
 class DovecotSharedFolderListener(DovecotListener):
@@ -383,8 +375,7 @@ class DovecotSharedFolderListener(DovecotListener):
 		:param regexp: string: regexp for re.findall()
 		:return: string
 		"""
-		try:
-			self.listener.setuid(0)
+		with SetUID(0):
 			cmd_proc = subprocess.Popen(cmd, stdin=stdin, stdout=stdout, stderr=stderr)
 			cmd_out, cmd_err = cmd_proc.communicate(input=stdin_input and stdin_input.encode('UTF-8'))
 			cmd_exit = cmd_proc.wait()
@@ -394,8 +385,6 @@ class DovecotSharedFolderListener(DovecotListener):
 					return res[0]
 				else:
 					return cmd_out.decode('UTF-8').rstrip()
-		finally:
-			self.listener.unsetuid()
 
 	def doveadm_set_mailbox_acls(self, mailbox, acls):  # type: (str, List[str]) -> None
 		for acl in acls:
@@ -490,9 +479,9 @@ class DovecotSharedFolderListener(DovecotListener):
 			except Exception:
 				self.log_e("Failed to unsubscribe user '%s' from mailbox '%s'." % (user, mailbox))
 
+	@SetUID(0)
 	def get_udm_infos(self, udm_module, udm_filter):  # type: (Any, str) -> List[Any]
 		try:
-			self.listener.setuid(0)
 			univention.admin.modules.update()
 			lo, po = getMachineConnection()
 			mod = univention.admin.modules.get(udm_module)
@@ -500,8 +489,6 @@ class DovecotSharedFolderListener(DovecotListener):
 		except Exception:
 			self.log_e("get_udm_infos(%s, %s): Failed to retrieve UDM info:\n%s" % (udm_module, udm_filter, traceback.format_exc()))
 			raise
-		finally:
-			self.listener.unsetuid()
 
 	def _diff_acls(self, old, new):
 		# type: (Dict[str, List[bytes]], Dict[str, List[bytes]]) -> List[str]

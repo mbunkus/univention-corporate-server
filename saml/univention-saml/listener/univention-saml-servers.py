@@ -31,6 +31,8 @@
 # <https://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
+
+from listener import SetUID
 import listener
 import subprocess
 import os.path
@@ -47,8 +49,7 @@ def handler(dn, new, old):
 	# type: (str, dict, dict) -> None
 	ucr = ConfigRegistry()
 	ucr.load()
-	listener.setuid(0)
-	try:
+	with SetUID(0):
 		try:
 			fqdn = '%s.%s' % (new['cn'][0].decode('UTF-8'), new['associatedDomain'][0].decode('ASCII'))
 		except (KeyError, IndexError):
@@ -67,5 +68,3 @@ def handler(dn, new, old):
 			path_to_key = ucr.get('saml/idp/certificate/privatekey')
 			if path_to_cert and os.path.exists(path_to_cert) and path_to_key and os.path.exists(path_to_key):
 				subprocess.call(['systemctl', 'restart', 'univention-saml'])
-	finally:
-		listener.unsetuid()

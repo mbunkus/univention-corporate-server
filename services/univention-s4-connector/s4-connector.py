@@ -34,6 +34,7 @@
 from __future__ import absolute_import
 
 from six.moves import cPickle as pickle
+from listener import SetUID
 import listener
 import os
 import time
@@ -112,16 +113,13 @@ def _is_module_disabled():
 	return listener.baseConfig.is_true('connector/s4/listener/disabled', False)
 
 
+@SetUID(0)
 def _restart_connector():
 	# type: () -> None
-	listener.setuid(0)
-	try:
 		if not subprocess.call(['pgrep', '-f', 'python.*s4connector.s4.main']):
 			ud.debug(ud.LISTENER, ud.PROCESS, "s4-connector: restarting connector ...")
 			subprocess.call(('service', 'univention-s4-connector', 'restart'))
 			ud.debug(ud.LISTENER, ud.PROCESS, "s4-connector: ... done")
-	finally:
-		listener.unsetuid()
 
 
 def handler(dn, new, old, command):
@@ -141,8 +139,7 @@ def handler(dn, new, old, command):
 			_restart_connector()
 			connector_needs_restart = False
 
-	listener.setuid(0)
-	try:
+	with SetUID(0):
 		for directory in dirs:
 			if not os.path.exists(os.path.join(directory, 'tmp')):
 				os.makedirs(os.path.join(directory, 'tmp'))
@@ -172,14 +169,10 @@ def handler(dn, new, old, command):
 				if os.path.exists(os.path.join(directory, 'tmp', 'old_dn')):
 					os.unlink(os.path.join(directory, 'tmp', 'old_dn'))
 
-	finally:
-		listener.unsetuid()
 
-
+@SetUID(0)
 def clean():
 	# type: () -> None
-	listener.setuid(0)
-	try:
 		for directory in dirs:
 			if not os.path.exists(directory):
 				continue
@@ -189,8 +182,6 @@ def clean():
 			if os.path.exists(os.path.join(directory, 'tmp')):
 				for filename in os.listdir(os.path.join(directory, 'tmp')):
 					os.remove(os.path.join(directory, filename))
-	finally:
-		listener.unsetuid()
 
 
 def postrun():
@@ -199,8 +190,7 @@ def postrun():
 	global connector_needs_restart
 
 	if s4_init_mode:
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			s4_init_mode = False
 			for ob in group_objects:
 				for directory in dirs:
@@ -210,8 +200,6 @@ def postrun():
 						p = pickle.Pickler(fd)
 						p.dump(ob)
 						p.clear_memo()
-		finally:
-			listener.unsetuid()
 		del group_objects[:]
 
 	if connector_needs_restart is True:

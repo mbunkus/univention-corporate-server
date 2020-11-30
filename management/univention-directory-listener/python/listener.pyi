@@ -31,7 +31,10 @@
 # <https://www.gnu.org/licenses/>.
 
 from univention.config_registry import ConfigRegistry
-from typing import List, Union
+from typing import Any, Callable, List, Optional, Type, TypeVar, Union
+from types import TracebackType
+
+_F = TypeVar("_F", bound=Callable[..., Any])
 
 configRegistry: ConfigRegistry
 
@@ -42,3 +45,18 @@ def unsetuid()  -> None:
 	...
 def run(file: str, argv: List[str], uid: int = -1, wait: int = 1) -> int:
 	...
+
+class SetUID(object):
+	def __init__(self, uid: int = ...) -> None:
+		...
+	def __enter__(self) -> None:
+		...
+	def ___exit__(
+		self,
+		exc_type: Optional[Type[BaseException]] = ...,
+		exc_value: Optional[BaseException] = ...,
+		traceback: Optional[TracebackType] = ...,
+	) -> None:
+		...
+	def __call__(self, f: _F) -> Callable[[_F], _F]:
+		...

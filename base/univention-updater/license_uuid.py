@@ -33,7 +33,7 @@
 
 from __future__ import absolute_import
 
-import listener
+from listener import SetUID
 import univention.config_registry
 
 name = 'license_uuid'
@@ -44,13 +44,10 @@ filter = '(&(objectClass=univentionLicense)(cn=admin))'
 def handler(dn, new, old):
     # type: (str, dict, dict) -> None
     if new:
-        listener.setuid(0)
-        try:
+        with SetUID(0):
             ucrVars = ['license/base=%s' % new.get('univentionLicenseBaseDN')[0].decode('UTF-8')]
             if new.get('univentionLicenseKeyID'):
                 ucrVars.append('uuid/license=%s' % new.get('univentionLicenseKeyID')[0].decode('ASCII'))
             else:
                 univention.config_registry.handler_unset(['uuid/license'])
             univention.config_registry.handler_set(ucrVars)
-        finally:
-            listener.unsetuid()

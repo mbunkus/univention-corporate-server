@@ -32,6 +32,7 @@
 
 from __future__ import absolute_import
 
+from listener import SetUID
 import listener
 import univention.config_registry
 
@@ -50,8 +51,5 @@ def handler(dn, new, old):
 		ucr.load()
 		if not ucr.get(UCRV):
 			fqdn = '%s.%s' % (new['cn'][0].decode('UTF-8'), new.get('associatedDomain')[0].decode('ASCII'))
-			listener.setuid(0)
-			try:
+			with SetUID(0):
 				univention.config_registry.handler_set(['%s=%s' % (UCRV, fqdn)])
-			finally:
-				listener.unsetuid()

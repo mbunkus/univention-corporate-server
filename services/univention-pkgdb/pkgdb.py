@@ -32,6 +32,7 @@
 
 from __future__ import absolute_import
 import os
+from listener import SetUID
 import listener
 import subprocess
 import univention.debug as ud
@@ -52,13 +53,10 @@ def exec_pkgdb(args):
 	# type: (list) -> int
 	ud.debug(ud.LISTENER, ud.INFO, "exec_pkgdb args=%s" % args)
 
-	listener.setuid(0)
-	try:
+	with SetUID(0):
 		cmd = ['univention-pkgdb-scan', '--db-server=%s.%s' % (hostname, domainname, ), ]
 		cmd += args
 		retcode = subprocess.call(cmd)
-	finally:
-		listener.unsetuid()
 
 	ud.debug(ud.LISTENER, ud.INFO, "pkgdb: return code %d" % retcode)
 	return retcode
@@ -88,11 +86,10 @@ def handler(dn, new, old):
 	# type: (str, dict, dict) -> None
 	ud.debug(ud.LISTENER, ud.INFO, "pkgdb handler dn=%s" % (dn))
 
-	try:
+	with SetUID(0):
 		if old and not new:
 			if 'uid' in old:
 				if del_system(old['uid'][0]) != 0:
-					listener.setuid(0)
 					file = open(os.path.join(DELETE_DIR, old['uid'][0]), 'w')
 					file.write(old['uid'][0] + '\n')
 					file.close()
@@ -100,9 +97,6 @@ def handler(dn, new, old):
 		elif new and not old:
 			if 'uid' in new:
 				if (add_system(new['uid'][0])) != 0:
-					listener.setuid(0)
 					file = open(os.path.join(ADD_DIR, new['uid'][0]), 'w')
 					file.write(new['uid'][0] + '\n')
 					file.close()
-	finally:
-		listener.unsetuid()

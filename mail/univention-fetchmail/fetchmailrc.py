@@ -54,30 +54,28 @@ FETCHMAIL_OLD_PICKLE = "/var/spool/univention-fetchmail/fetchmail_old_dn"
 REpassword = re.compile("^poll .*? there with password '(.*?)' is '[^']+' here")
 
 
+@SetUID(0)
 def load_rc(ofile):
 	# type: () -> Optional[int]
 	"""open an textfile with setuid(0) for root-action"""
 	rc = None
-	listener.setuid(0)
 	try:
 		with open(ofile, "r") as fd:
 			rc = fd.readlines()
 	except EnvironmentError as exc:
 		ud.debug(ud.LISTENER, ud.ERROR, 'Failed to open "%s": %s' % (ofile, exc))
-	listener.unsetuid()
 	return rc
 
 
+@SetUID(0)
 def write_rc(flist, wfile):
 	# type: (Iterable[str], str) -> None
 	"""write to an textfile with setuid(0) for root-action"""
-	listener.setuid(0)
 	try:
 		with open(wfile, "w") as fd:
 			fd.writelines(flist)
 	except EnvironmentError as exc:
 		ud.debug(ud.LISTENER, ud.ERROR, 'Failed to write to file "%s": %s' % (wfile, exc))
-	listener.unsetuid()
 
 
 def get_pw_from_rc(lines, uid):

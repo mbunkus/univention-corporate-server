@@ -32,6 +32,8 @@
 # <https://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
+
+from listener import SetUID
 import listener
 import cPickle
 import time
@@ -109,16 +111,13 @@ def _dump_changes_to_file_and_check_file(directory, dn, new, old, old_dn):
 	shutil.move(filepath, os.path.join(directory, filename))
 
 
+@SetUID(0)
 def _restart_connector():
 	# type: () -> None
-	listener.setuid(0)
-	try:
 		if not subprocess.call(['pgrep', '-f', 'python.*connector.ad.main']):
 			ud.debug(ud.LISTENER, ud.PROCESS, "ad-connector: restarting connector ...")
 			subprocess.call(('service', 'univention-ad-connector', 'restart'))
 			ud.debug(ud.LISTENER, ud.PROCESS, "ad-connector: ... done")
-	finally:
-		listener.unsetuid()
 
 
 def handler(dn, new, old, command):
@@ -135,8 +134,7 @@ def handler(dn, new, old, command):
 			_restart_connector()
 			connector_needs_restart = False
 
-	listener.setuid(0)
-	try:
+	with SetUID(0):
 		for directory in dirs:
 			if not os.path.exists(os.path.join(directory, 'tmp')):
 				os.makedirs(os.path.join(directory, 'tmp'))
@@ -166,14 +164,10 @@ def handler(dn, new, old, command):
 				if os.path.exists(os.path.join(directory, 'tmp', 'old_dn')):
 					os.unlink(os.path.join(directory, 'tmp', 'old_dn'))
 
-	finally:
-		listener.unsetuid()
 
-
+@SetUID(0)
 def clean():
 	# type: () -> None
-	listener.setuid(0)
-	try:
 		for directory in dirs:
 			for filename in os.listdir(directory):
 				if os.path.isfile(filename):
@@ -181,8 +175,6 @@ def clean():
 			if os.path.exists(os.path.join(directory, 'tmp')):
 				for filename in os.listdir(os.path.join(directory, 'tmp')):
 					os.remove(os.path.join(directory, filename))
-	finally:
-		listener.unsetuid()
 
 
 def postrun():
@@ -191,8 +183,7 @@ def postrun():
 	global group_objects
 	global connector_needs_restart
 	if init_mode:
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			init_mode = False
 			for ob in group_objects:
 				for directory in dirs:
@@ -205,8 +196,6 @@ def postrun():
 					f.close()
 			del group_objects
 			group_objects = []
-		finally:
-			listener.unsetuid()
 	if connector_needs_restart is True:
 		_restart_connector()
 		connector_needs_restart = False

@@ -32,6 +32,7 @@
 
 from __future__ import absolute_import
 
+from listener import SetUID
 import listener
 import time
 import syslog
@@ -149,8 +150,7 @@ def handler(dn, new_copy, old_copy):
 	if not listener.configRegistry.is_true('ldap/logging'):
 		return
 
-	listener.setuid(0)
-	try:
+	with SetUID(0):
 		# check for exclusion
 		if any(
 			value in dn
@@ -225,8 +225,6 @@ def handler(dn, new_copy, old_copy):
 		syslog.openlog(name, 0, syslog.LOG_DAEMON)
 		syslog.syslog(syslog.LOG_INFO, logmsgfmt % (dn, id, modifier, timestamp, nexthash))
 		syslog.closelog()
-	finally:
-		listener.unsetuid()
 
 
 def createFile(filename):
@@ -257,8 +255,7 @@ def initialize():
 	timestamp = time.strftime(timestampfmt, time.gmtime())
 	univention.debug.debug(univention.debug.LISTENER, univention.debug.INFO, 'init %s' % name)
 
-	listener.setuid(0)
-	try:
+	with SetUID(0):
 		if not os.path.exists(logname):
 			createFile(logname)
 
@@ -291,17 +288,12 @@ def initialize():
 		syslog.openlog(name, 0, syslog.LOG_DAEMON)
 		syslog.syslog(syslog.LOG_INFO, '%s\nTimestamp=%s\nNew Hash=%s' % (action, timestamp, nexthash))
 		syslog.closelog()
-	finally:
-		listener.unsetuid()
 
 
 # --- initialize on load:
-listener.setuid(0)
-try:
+with SetUID(0):
 	if not os.path.exists(logname):
 		createFile(logname)
 	if not os.path.exists(cachename):
 		univention.debug.debug(univention.debug.LISTENER, univention.debug.WARN, '%s: %s vanished, creating it' % (name, cachename))
 		createFile(cachename)
-finally:
-	listener.unsetuid()

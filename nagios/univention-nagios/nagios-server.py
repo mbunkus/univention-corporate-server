@@ -31,6 +31,8 @@
 # <https://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
+
+from listener import SetUID
 import listener
 import os
 import re
@@ -120,8 +122,7 @@ __reload = False
 
 
 def writeTimeperiod(filename, name, alias, periods):
-	listener.setuid(0)
-	try:
+	with open(filename, 'w') as fp:
 		fp = open(filename, 'w')
 		fp.write('# Warning: This file is auto-generated and might be overwritten.\n')
 		fp.write('#          Please use univention-directory-manager instead.\n')
@@ -151,8 +152,6 @@ def writeTimeperiod(filename, name, alias, periods):
 		fp.close()
 
 		ud.debug(ud.LISTENER, ud.INFO, 'NAGIOS-SERVER: timeperiod %s written' % name)
-	finally:
-		listener.unsetuid()
 
 
 def handleTimeperiod(dn, new, old):
@@ -161,12 +160,9 @@ def handleTimeperiod(dn, new, old):
 
 	if old:
 		filename = conffilename % old['cn'][0].decode('UTF-8')
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			if os.path.exists(filename):
 				os.unlink(filename)
-		finally:
-			listener.unsetuid()
 
 	if new:
 		cn = new['cn'][0].decode('UTF-8')
@@ -208,10 +204,9 @@ def hostDeleted(new, old):
 	return False
 
 
+@SetUID(0)
 def createContact(contact):
 	# type: (str) -> None
-	listener.setuid(0)
-	try:
 		filename = '%s%s.cfg' % (__contactsdir, contact)
 		fp = open(filename, 'w')
 		fp.write('# Warning: This file is auto-generated and might be overwritten.\n')
@@ -234,16 +229,13 @@ def createContact(contact):
 		fp.close()
 
 		ud.debug(ud.LISTENER, ud.INFO, 'NAGIOS-SERVER: contact %s written' % contact)
-	finally:
-		listener.unsetuid()
 
 
 def removeContactIfUnused(contact):
 	# type: (str) -> None
 	contact_filename = os.path.join(__contactsdir, "%s.cfg" % contact)
 	if os.path.exists(contact_filename):
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			# check if email address is still in use
 			result = os.system('grep -c "%s" %s* 2> /dev/null > /dev/null' % (pipes.quote(contact), __contactgrpsdir))
 			if result == 1:
@@ -251,14 +243,11 @@ def removeContactIfUnused(contact):
 				os.unlink(contact_filename)
 			else:
 				ud.debug(ud.LISTENER, ud.INFO, 'NAGIOS-SERVER: contact %s is in use' % contact_filename)
-		finally:
-			listener.unsetuid()
 
 
+@SetUID(0)
 def createContactGroup(grpname, contactlist):
 	# type: (str, list) -> None
-	listener.setuid(0)
-	try:
 		filename = '%s%s.cfg' % (__contactgrpsdir, grpname)
 		fp = open(filename, 'w')
 		fp.write('# Warning: This file is auto-generated and might be overwritten.\n')
@@ -283,9 +272,6 @@ def createContactGroup(grpname, contactlist):
 		# create default timeperiod if missing
 		createDefaultTimeperiod()
 
-	finally:
-		listener.unsetuid()
-
 
 def updateContactGroup(fqdn, new, old):
 	# type: (str, dict, dict) -> None
@@ -297,11 +283,8 @@ def updateContactGroup(fqdn, new, old):
 
 		cg_filename = os.path.join(__contactgrpsdir, 'cg-%s.cfg' % fqdn)
 		if os.path.exists(cg_filename):
-			listener.setuid(0)
-			try:
+			with SetUID(0):
 				os.unlink(cg_filename)
-			finally:
-				listener.unsetuid()
 
 		ud.debug(ud.LISTENER, ud.INFO, 'NAGIOS-SERVER: removed contactgroup for host %s' % fqdn)
 
@@ -324,8 +307,7 @@ def readHostGroup(grpname):
 	# type: (str) -> list
 	grp_filename = os.path.join(__hostgrpsdir, '%s.cfg' % grpname)
 
-	listener.setuid(0)
-	try:
+	with SetUID(0):
 		if not os.path.exists(grp_filename):
 			return []
 		with open(grp_filename, 'r') as fp:
@@ -334,8 +316,6 @@ def readHostGroup(grpname):
 		if res:
 			return res.group(1).split(', ')
 		return []
-	finally:
-		listener.unsetuid()
 
 
 def writeHostGroup(grpname, members):
@@ -359,12 +339,9 @@ def deleteHostGroup(grpname):
 	# type: (str) -> None
 	grp_filename = os.path.join(__hostgrpsdir, '%s.cfg' % grpname)
 
-	listener.setuid(0)
-	try:
+	with SetUID(0):
 		if os.path.exists(grp_filename):
 			os.unlink(os.path.join(__servicesdir, grp_filename))
-	finally:
-		listener.unsetuid()
 
 
 def removeFromHostGroup(grpname, fqdn):
@@ -390,17 +367,13 @@ def addToHostGroup(grpname, fqdn):
 def handleService(dn, new, old):
 	# type: (str, dict, dict) -> None
 	if old:
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			for fn in os.listdir(__servicesdir):
 				if fn.find("%s," % old['cn'][0].decode('UTF-8')) == 0:
 					os.unlink(os.path.join(__servicesdir, fn))
-		finally:
-			listener.unsetuid()
 
 	if new:
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			for host in new.get('univentionNagiosHostname', []):
 					new_cn = new['cn'][0].decode('UTF-8')
 					filename = os.path.join(__servicesdir, '%s,%s.cfg' % (new_cn, host.decode('UTF-8')))
@@ -439,10 +412,6 @@ def handleService(dn, new, old):
 						ud.debug(ud.LISTENER, ud.ERROR, 'NAGIOS-SERVER: handleService: contactgrp for host %s does not exist - using fallback' % host)
 
 						createContactGroup('cg-%s' % host, [__fallbackContact])
-						listener.setuid(0)
-
-		finally:
-			listener.unsetuid()
 
 
 def getUniventionComputerType(new):
@@ -505,26 +474,20 @@ def createHostExtInfo(fqdn, new):
 		ud.debug(ud.LISTENER, ud.INFO, 'NAGIOS-SERVER: extended info for host %s written' % fqdn)
 
 
+@SetUID(0)
 def removeHostExtInfo(fqdn):
 	# type: (str) -> None
 	fn = os.path.join(__hostextinfodir, '%s.cfg' % fqdn)
 	if os.path.exists(fn):
-		listener.setuid(0)
-		try:
 			os.unlink(fn)
-		finally:
-			listener.unsetuid()
 
 
+@SetUID(0)
 def removeHost(fqdn):
 	# type: (str) -> None
 	fn = os.path.join(__hostsdir, '%s.cfg' % fqdn)
 	if os.path.exists(fn):
-		listener.setuid(0)
-		try:
 			os.unlink(fn)
-		finally:
-			listener.unsetuid()
 
 
 def handleHost(dn, new, old):
@@ -571,12 +534,9 @@ def handleHost(dn, new, old):
 
 	# fqdn changed ==> remove old entry and create new ones
 	if oldfqdn != newfqdn and new and old:
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			if os.path.exists(old_host_filename):
 				os.unlink(old_host_filename)
-		finally:
-			listener.unsetuid()
 		ud.debug(ud.LISTENER, ud.INFO, 'NAGIOS-SERVER: fqdn changed: host %s deleted' % oldfqdn)
 
 		# remove contact group and contacts
@@ -590,12 +550,9 @@ def handleHost(dn, new, old):
 
 	# check if host has been deleted or nagios support disabled
 	if hostDeleted(new, old):
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			if os.path.exists(old_host_filename):
 				os.unlink(old_host_filename)
-		finally:
-			listener.unsetuid()
 		ud.debug(ud.LISTENER, ud.INFO, 'NAGIOS-SERVER: host %s deleted' % oldfqdn)
 
 		# remove contact group and contacts
@@ -613,8 +570,7 @@ def handleHost(dn, new, old):
 			ud.debug(ud.LISTENER, ud.ERROR, 'NAGIOS-SERVER: missing aRecord (%s)' % dn)
 			return
 
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			fp = open(new_host_filename, 'w')
 			fp.write('# Warning: This file is auto-generated and might be overwritten.\n')
 			fp.write('#          Please use univention-admin instead.\n')
@@ -647,9 +603,6 @@ def handleHost(dn, new, old):
 			fp.write('    notification_options    d,u,r\n')
 			fp.write('}\n')
 			fp.close()
-
-		finally:
-			listener.unsetuid()
 
 		ud.debug(ud.LISTENER, ud.INFO, 'NAGIOS-SERVER: host %s written' % newfqdn)
 
@@ -697,11 +650,8 @@ def initialize():
 		dirname = os.path.join('/etc/nagios/conf.univention.d', dirname)
 		ud.debug(ud.LISTENER, ud.INFO, 'NAGIOS-SERVER: creating dir: %s' % dirname)
 		if not os.path.exists(dirname):
-			listener.setuid(0)
-			try:
+			with SetUID(0):
 				os.mkdir(dirname)
-			finally:
-				listener.unsetuid()
 
 
 def deleteTree(dirname):
@@ -721,11 +671,8 @@ def clean():
 	# type: () -> None
 	dirname = '/etc/nagios/conf.univention.d'
 	if os.path.exists(dirname):
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			deleteTree(dirname)
-		finally:
-			listener.unsetuid()
 
 
 def postrun():

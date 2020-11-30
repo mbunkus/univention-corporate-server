@@ -31,6 +31,7 @@
 
 from __future__ import absolute_import
 
+from listener import SetUID
 import listener
 import os
 import univention.debug as ud
@@ -142,12 +143,9 @@ def remove_pxe(old):
 			ud.debug(ud.LISTENER, ud.ERROR, 'PXE: invalid old IP address %r' % (old['aRecord'][0],))
 			return
 		filename = os.path.join(PXEBASE, basename)
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			if os.path.exists(filename):
 				os.unlink(filename)
-		finally:
-			listener.unsetuid()
 
 
 def create_pxe(new, pxeconfig):
@@ -166,9 +164,6 @@ def create_pxe(new, pxeconfig):
 		filename = os.path.join(PXEBASE, basename)
 
 		if new.get('univentionServerReinstall', EMPTY)[0] == b'1':
-			listener.setuid(0)
-			try:
+			with SetUID(0):
 				with open(filename, 'w') as fd:
 					fd.write(pxeconfig)
-			finally:
-				listener.unsetuid()

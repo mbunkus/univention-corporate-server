@@ -51,6 +51,7 @@ from abc import ABCMeta, abstractproperty, abstractmethod
 
 import six
 import apt
+from listener import SetUID
 import listener
 from ldap.filter import filter_format
 from ldap.dn import escape_dn_chars
@@ -601,8 +602,7 @@ class UniventionLDAPSchema(UniventionLDAPExtensionWithListenerHandler):
 					self._handler(dn, [], old, name)
 				raise exc
 
-			listener.setuid(0)
-			try:
+			with SetUID(0):
 				backup_filename = None
 				if old:
 					old_filename = safe_path_join(self.basedir, old['univentionLDAPSchemaFilename'][0].decode('UTF-8'))
@@ -672,14 +672,10 @@ class UniventionLDAPSchema(UniventionLDAPExtensionWithListenerHandler):
 
 				self._todo_list.append(dn)
 				self._do_reload = True
-
-			finally:
-				listener.unsetuid()
 		elif old:  # remove
 			old_filename = safe_path_join(self.basedir, old['univentionLDAPSchemaFilename'][0].decode('UTF-8'))
 			if os.path.exists(old_filename):
-				listener.setuid(0)
-				try:
+				with SetUID(0):
 					backup_fd, backup_filename = tempfile.mkstemp()
 					ud.debug(ud.LISTENER, ud.INFO, '%s: Moving old file %s to %s.' % (name, old_filename, backup_filename))
 					try:
@@ -725,9 +721,6 @@ class UniventionLDAPSchema(UniventionLDAPExtensionWithListenerHandler):
 
 					self._todo_list.append(dn)
 					self._do_reload = True
-
-				finally:
-					listener.unsetuid()
 
 
 class UniventionLDAPACL(UniventionLDAPExtensionWithListenerHandler):
@@ -824,8 +817,7 @@ class UniventionLDAPACL(UniventionLDAPExtensionWithListenerHandler):
 					set_handler_message(name, dn, 'invalid filename detected during modification. removing file!')
 					self._handler(dn, [], old, name)
 				raise exc
-			listener.setuid(0)
-			try:
+			with SetUID(0):
 				backup_filename = None
 				backup_ucrinfo_filename = None
 				backup_backlink_filename = None
@@ -973,9 +965,6 @@ class UniventionLDAPACL(UniventionLDAPExtensionWithListenerHandler):
 
 				self._todo_list.append(dn)
 				self._do_reload = True
-
-			finally:
-				listener.unsetuid()
 		elif old:
 			old_filename = safe_path_join(self.ucr_slapd_conf_subfile_dir, old['univentionLDAPACLFilename'][0].decode('UTF-8'))
 			# plus backlink file
@@ -983,8 +972,7 @@ class UniventionLDAPACL(UniventionLDAPExtensionWithListenerHandler):
 			# and the old UCR registration
 			old_ucrinfo_filename = safe_path_join(self.ucr_info_basedir, "%s%s.info" % (self.file_prefix, old['univentionLDAPACLFilename'][0].decode('UTF-8')))
 			if os.path.exists(old_filename):
-				listener.setuid(0)
-				try:
+				with SetUID(0):
 					ud.debug(ud.LISTENER, ud.INFO, '%s: Removing extension %s.' % (name, old['cn'][0].decode('UTF-8')))
 					if os.path.exists(old_ucrinfo_filename):
 						os.unlink(old_ucrinfo_filename)
@@ -1001,9 +989,6 @@ class UniventionLDAPACL(UniventionLDAPExtensionWithListenerHandler):
 
 					self._todo_list.append(dn)
 					self._do_reload = True
-
-				finally:
-					listener.unsetuid()
 
 
 class UniventionDataExtension(UniventionLDAPExtension):

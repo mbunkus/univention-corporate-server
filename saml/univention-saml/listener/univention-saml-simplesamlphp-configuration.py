@@ -31,7 +31,8 @@
 # <https://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
-import listener
+
+from listener import SetUID
 
 import os
 import glob
@@ -115,10 +116,9 @@ def php_bool(bool_):
 	return 'true' if mapped else 'false'
 
 
+@SetUID(0)
 def handler(dn, new, old):
 	# type: (str, dict, dict) -> None
-	listener.setuid(0)
-	try:
 		if old:
 			if old.get('SAMLServiceProviderIdentifier'):
 				# delete old service provider config file
@@ -140,8 +140,6 @@ def handler(dn, new, old):
 			fd.write('<?php\n')
 			for filename in glob.glob(os.path.join(sp_config_dir, '*.php')):
 				fd.write("require_once(%s);\n" % (php_string(filename),))
-	finally:
-		listener.unsetuid()
 
 
 def write_configuration_file(dn, new, filename):

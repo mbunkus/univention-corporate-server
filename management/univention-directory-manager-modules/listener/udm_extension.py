@@ -38,6 +38,7 @@ import subprocess
 
 import apt
 
+from listener import SetUID
 import listener
 
 import univention.debug as ud
@@ -162,8 +163,7 @@ def handler(dn, new, old):
 			return
 
 		new_relative_filename = new['%sFilename' % objectclass][0].decode('UTF-8')
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			if old_relative_filename and old_relative_filename != new_relative_filename:
 				remove_python_file(objectclass, target_subdir, old_relative_filename)
 			if not install_python_file(objectclass, target_subdir, new_relative_filename, new_object_data):
@@ -172,27 +172,21 @@ def handler(dn, new, old):
 			if objectclass == 'univentionUDMModule':
 				install_umcregistration(dn, new)
 				install_umcicons(dn, new)
-		finally:
-			listener.unsetuid()
 
 	elif old:
 
 		# ok, basic checks passed, handle the change
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			remove_python_file(objectclass, target_subdir, old_relative_filename)
 			remove_messagecatalog(dn, old, objectclass)
 			if objectclass == 'univentionUDMModule':
 				remove_umcicons(dn, old)
 				remove_umcregistration(dn, old)
-		finally:
-			listener.unsetuid()
 
 	# TODO: Kill running univention-cli-server?
 
 	# Mark new extension object active
-	listener.setuid(0)
-	try:
+	with SetUID(0):
 		if new:
 			if not listener.configRegistry.get('server/role') == 'domaincontroller_master':
 				# Only set active flag on Primary
@@ -217,13 +211,9 @@ def handler(dn, new, old):
 			except udm_errors.ldapError as exc:
 				ud.debug(ud.LISTENER, ud.ERROR, '%s: Error accessing UDM: %s' % (name, exc))
 
-	finally:
-		listener.unsetuid()
 
-
+@SetUID(0)
 def remove_object(udm_module_name, object_dn):
-	listener.setuid(0)
-	try:
 		try:
 			ldap_connection, ldap_position = udm_uldap.getAdminConnection()
 			udm_modules.update()
@@ -239,8 +229,6 @@ def remove_object(udm_module_name, object_dn):
 		except (udm_errors.ldapError, udm_errors.noObject) as exc:
 			ud.debug(ud.LISTENER, ud.ERROR, '%s: Error deleting %s: %s.' % (name, object_dn, exc))
 			raise exc
-	finally:
-		listener.unsetuid()
 
 
 def install_python_file(objectclass, target_subdir, target_filename, data):

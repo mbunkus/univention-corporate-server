@@ -37,6 +37,8 @@ configuration directory (should-state) and reload/restart as appropriate.
 # <https://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
+
+from listener import SetUID
 import listener
 import os
 import subprocess
@@ -147,6 +149,7 @@ def _quote_config_parameter(arg):
 	return arg.replace('\\', '\\\\').replace('"', '\\"')
 
 
+@SetUID(0)
 def handler(dn, new, old):
 	# type: (str, dict, dict) -> None
 	"""Handle LDAP changes."""
@@ -154,7 +157,6 @@ def handler(dn, new, old):
 	if base and not dn.endswith(base):
 		return
 
-	listener.setuid(0)
 	try:
 		if new and not old:
 			# Add
@@ -174,8 +176,6 @@ def handler(dn, new, old):
 			chgrp_bind(zonefile)
 	except InvalidZone as exc:
 		ud.debug(ud.LISTENER, ud.ERROR, '%s is invalid: %s' % (dn, exc))
-	finally:
-		listener.unsetuid()
 
 
 def _ldap_auth_string(ucr):
@@ -359,6 +359,7 @@ def _kill_children(pids, timeout=5):
 	_wait_children(pids, timeout)
 
 
+@SetUID(0)
 def postrun():
 	# type: () -> None
 	"""Run pending updates."""
@@ -367,7 +368,6 @@ def postrun():
 	# Reload UCR
 	listener.configRegistry.load()
 
-	listener.setuid(0)
 	try:
 		# Re-create named and proxy inclusion file
 		named_conf = open(NAMED_CONF_FILE, 'w')
@@ -420,5 +420,3 @@ def postrun():
 		_kill_children(pids)
 	except InvalidZone as exc:
 		ud.debug(ud.LISTENER, ud.ERROR, 'postrun: invalid: %s' % (exc,))
-	finally:
-		listener.unsetuid()

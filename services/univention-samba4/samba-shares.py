@@ -33,6 +33,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
+from listener import SetUID
 import listener
 import os
 import re
@@ -133,12 +134,9 @@ def handler(dn, new, old, command):
 		share_name = old.get('univentionShareSambaName', [b''])[0].decode('UTF-8', 'ignore')
 		share_name_mapped = quote(share_name, safe='')
 		filename = '/etc/samba/shares.conf.d/%s' % (share_name_mapped,)
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			if os.path.exists(filename):
 				os.unlink(filename)
-		finally:
-			listener.unsetuid()
 
 	def _quote(arg):
 		if ' ' in arg or '"' in arg or '\\' in arg:
@@ -166,17 +164,13 @@ def handler(dn, new, old, command):
 			# object was renamed
 			if not old and oldObject and command == "a":
 				old = oldObject
-			listener.setuid(0)
-			try:
+			with SetUID(0):
 				ret = univention.lib.listenerSharePath.createOrRename(old, new, listener.configRegistry)
-			finally:
-				listener.unsetuid()
 			if ret:
 				ud.debug(ud.LISTENER, ud.ERROR, "%s: rename/create of sharePath for %s failed (%s)" % (name, dn, ret))
 				return
 
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			fp = open(filename, 'w')
 
 			print('[%s]' % (share_name,), file=fp)
@@ -252,12 +246,9 @@ def handler(dn, new, old, command):
 			# acl and inherit -> map acl inherit (Bug #47850)
 			if '1' in new.get('univentionShareSambaNtAclSupport', []) and '1' in new.get('univentionShareSambaInheritAcls', []):
 				print('map acl inherit = yes', file=fp)
-		finally:
-			listener.unsetuid()
 
 	if (not (new and old)) or (new['univentionShareSambaName'][0] != old['univentionShareSambaName'][0]):
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			run_ucs_commit = False
 			if not os.path.exists('/etc/samba/shares.conf'):
 				run_ucs_commit = True
@@ -270,12 +261,9 @@ def handler(dn, new, old, command):
 			os.rename('/etc/samba/shares.conf.temp', '/etc/samba/shares.conf')
 			if run_ucs_commit:
 				ucr_handlers.commit(listener.configRegistry, ['/etc/samba/smb.conf'])
-		finally:
-			listener.unsetuid()
 
 	if 'univentionShareSambaBaseDirAppendACL' in new or 'univentionShareSambaBaseDirAppendACL' in old:
-		listener.setuid(0)
-		try:
+		with SetUID(0):
 			proc = subprocess.Popen(
 				['samba-tool', 'ntacl', 'get', '--as-sddl', new['univentionSharePath'][0]],
 				stdout=subprocess.PIPE,
@@ -333,34 +321,25 @@ def handler(dn, new, old, command):
 						ud.debug(
 							ud.LISTENER, ud.ERROR,
 							"could not set nt acl for dir %s (%s)" % (new['univentionSharePath'][0], stderr))
-		finally:
-			listener.unsetuid()
 
 
+@SetUID(0)
 def initialize():
 	# type: () -> None
 	if not os.path.exists('/etc/samba/shares.conf.d'):
-		listener.setuid(0)
-		try:
 			os.mkdir('/etc/samba/shares.conf.d')
-		finally:
-			listener.unsetuid()
 
 
+@SetUID(0)
 def prerun():
 	# type: () -> None
 	if not os.path.exists('/etc/samba/shares.conf.d'):
-		listener.setuid(0)
-		try:
 			os.mkdir('/etc/samba/shares.conf.d')
-		finally:
-			listener.unsetuid()
 
 
+@SetUID(0)
 def clean():
 	# type: () -> None
-	listener.setuid(0)
-	try:
 		if os.path.exists('/etc/samba/shares.conf.d'):
 			for f in os.listdir('/etc/samba/shares.conf.d'):
 				os.unlink(os.path.join('/etc/samba/shares.conf.d', f))
@@ -368,8 +347,6 @@ def clean():
 				os.unlink('/etc/samba/shares.conf')
 				ucr_handlers.commit(listener.configRegistry, ['/etc/samba/smb.conf'])
 			os.rmdir('/etc/samba/shares.conf.d')
-	finally:
-		listener.unsetuid()
 
 
 def postrun():

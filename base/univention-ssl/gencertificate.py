@@ -32,7 +32,7 @@
 
 from __future__ import absolute_import
 
-from listener import configRegistry, setuid, unsetuid
+from listener import configRegistry, SetUID
 import grp
 import os
 from shutil import rmtree
@@ -94,8 +94,7 @@ def handler(dn, new, old, command=''):
 	if configRegistry['server/role'] != 'domaincontroller_master':
 		return
 
-	setuid(0)
-	try:
+	with SetUID(0):
 		global _delay
 		if _delay:
 			(old_dn, old) = _delay
@@ -144,8 +143,6 @@ def handler(dn, new, old, command=''):
 				fqdn = "*.%s.%s" % (new_cn, domain(new))
 				certpath = os.path.join(SSLDIR, fqdn)
 				fix_permissions(certpath, dn, new)
-	finally:
-		unsetuid()
 
 
 def fix_permissions(certpath, dn, new):
