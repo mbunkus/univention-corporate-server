@@ -440,7 +440,6 @@ def initialize():
 
 def clean():
 	# type: () -> None
-	global ucr_handlers
 	listener.setuid(0)
 	try:
 		for f in os.listdir('/etc/samba/printers.conf.d'):
@@ -456,6 +455,5 @@ def clean():
 
 def postrun():
 	# type: () -> None
-	global reload_samba_in_postrun
 	if reload_samba_in_postrun:
 		reload_smbd()

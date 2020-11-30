@@ -226,11 +226,9 @@ def handler(dn, new, old, command):
 
 def postrun():
 	# type: () -> None
-	global __initscript
-	initscript = __initscript
 	ud.debug(ud.LISTENER, ud.INFO, 'Restarting fetchmail-daemon')
 	listener.setuid(0)
 	try:
-		listener.run(initscript, ['fetchmail', 'restart'], uid=0)
+		listener.run(_initscript, ['fetchmail', 'restart'], uid=0)
 	finally:
 		listener.unsetuid()

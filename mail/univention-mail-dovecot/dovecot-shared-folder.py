@@ -129,7 +129,6 @@ filter = '(&(objectClass=univentionMailSharedFolder)(univentionMailHomeServer=%s
 
 def handler(dn, new, old):
 	# type: (str, dict, dict) -> None
-	global hostname, domainname
 	hostname = hostname.lower()
 	domainname = domainname.lower()
 

@@ -126,7 +126,6 @@ def _restart_connector():
 
 def handler(dn, new, old, command):
 	# type: (str, Optional[Dict[str, List[bytes]]], Optional[Dict[str, List[bytes]]], str) -> None
-	global group_objects
 	global s4_init_mode
 	global connector_needs_restart
 
@@ -197,7 +196,6 @@ def clean():
 def postrun():
 	# type: () -> None
 	global s4_init_mode
-	global group_objects
 	global connector_needs_restart
 
 	if s4_init_mode:
@@ -212,10 +210,9 @@ def postrun():
 						p = pickle.Pickler(fd)
 						p.dump(ob)
 						p.clear_memo()
-			del group_objects
-			group_objects = []
 		finally:
 			listener.unsetuid()
+		del group_objects[:]
 
 	if connector_needs_restart is True:
 		_restart_connector()

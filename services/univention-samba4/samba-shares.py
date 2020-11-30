@@ -256,7 +256,6 @@ def handler(dn, new, old, command):
 			listener.unsetuid()
 
 	if (not (new and old)) or (new['univentionShareSambaName'][0] != old['univentionShareSambaName'][0]):
-		global ucr_handlers
 		listener.setuid(0)
 		try:
 			run_ucs_commit = False
@@ -360,7 +359,6 @@ def prerun():
 
 def clean():
 	# type: () -> None
-	global ucr_handlers
 	listener.setuid(0)
 	try:
 		if os.path.exists('/etc/samba/shares.conf.d'):

@@ -157,8 +157,6 @@ def no_relevant_change(new, old):
 
 def handler(dn, new, old, command):
 	# type: (str, dict, dict, str) -> None
-	global modified_default_names
-
 	if ucr.is_false("listener/module/wellknownsidnamemapping", False):
 		ud.debug(ud.LISTENER, ud.INFO, '%s: deactivated by listener/module/wellknownsidnamemapping' % (name,))
 		return
@@ -230,7 +228,6 @@ def handler(dn, new, old, command):
 
 def postrun():
 	# type: () -> None
-	global modified_default_names
 	if not modified_default_names:
 		return
 
@@ -255,5 +252,5 @@ def postrun():
 				if hasattr(hook_module, 'postrun'):
 					hook_module.postrun(modified_default_names)
 	finally:
-		modified_default_names = []
+		del modified_default_names[:]
 		listener.unsetuid()
