@@ -33,7 +33,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-from listener import SetUID
+from listener import SetUID, run
 import listener
 import os
 import re
@@ -351,9 +351,4 @@ def clean():
 
 def postrun():
 	# type: () -> None
-	listener.setuid(0)
-	try:
-		initscript = '/etc/init.d/samba'
-		os.spawnv(os.P_WAIT, initscript, ['samba', 'reload'])
-	finally:
-		listener.unsetuid()
+	run('/etc/init.d/samba', ['samba', 'reload'], uid=0, wait=True)

@@ -32,7 +32,7 @@
 
 from __future__ import absolute_import
 
-from listener import SetUID
+from listener import SetUID, run
 import listener
 import os
 import re
@@ -175,4 +175,4 @@ def _quote(text):
 
 def postrun():
 	# type: () -> None
-	listener.run('/bin/systemctl', ['systemctl', 'reload-or-restart', 'nfs-kernel-server.service'], uid=0)
+	run('/bin/systemctl', ['systemctl', 'reload-or-restart', 'nfs-kernel-server.service'], uid=0)

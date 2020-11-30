@@ -32,7 +32,7 @@
 
 from __future__ import absolute_import
 
-from listener import SetUID
+from listener import SetUID, run
 import listener
 import os
 import re
@@ -697,11 +697,7 @@ def postrun():
 				if listener.configRegistry.is_true("nagios/server/autostart", False):
 					ud.debug(ud.LISTENER, ud.INFO, 'NAGIOS-SERVER: nagios not running - restarting server')
 
-					listener.setuid(0)
-					try:
-						listener.run(initscript, ['nagios', 'restart'], uid=0)
-					finally:
-						listener.unsetuid()
+					run(initscript, ['nagios', 'restart'], uid=0)
 			else:
 				ud.debug(ud.LISTENER, ud.ERROR, 'NAGIOS-SERVER: nagios reported an error in configfile /etc/nagios/nagios.cfg. Please restart nagios manually: "%s restart".' % initscript)
 				listener.unsetuid()
@@ -709,11 +705,7 @@ def postrun():
 		else:
 			if retcode == 0:
 				ud.debug(ud.LISTENER, ud.INFO, 'NAGIOS-SERVER: reloading server')
-				listener.setuid(0)
-				try:
-					listener.run(initscript, ['nagios', 'reload'], uid=0)
-				finally:
-					listener.unsetuid()
+				run(initscript, ['nagios', 'reload'], uid=0)
 			else:
 				ud.debug(ud.LISTENER, ud.ERROR, 'NAGIOS-SERVER: nagios reported an error in configfile /etc/nagios/nagios.cfg. Please restart nagios manually: "%s restart".' % initscript)
 				listener.unsetuid()

@@ -27,6 +27,7 @@
 #
 from __future__ import absolute_import
 
+from listener import run
 import listener
 import univention.debug as ud
 import re
@@ -225,8 +226,4 @@ def handler(dn, new, old, command):
 def postrun():
 	# type: () -> None
 	ud.debug(ud.LISTENER, ud.INFO, 'Restarting fetchmail-daemon')
-	listener.setuid(0)
-	try:
-		listener.run(_initscript, ['fetchmail', 'restart'], uid=0)
-	finally:
-		listener.unsetuid()
+	run(_initscript, ['fetchmail', 'restart'], uid=0)

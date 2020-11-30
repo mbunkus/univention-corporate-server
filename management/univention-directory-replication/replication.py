@@ -39,7 +39,7 @@
 
 from __future__ import print_function, absolute_import
 
-from listener import SetUID
+from listener import SetUID, run
 import listener
 
 import os
@@ -785,7 +785,7 @@ def check_file_system_space():
 	s.sendmail(sender, [recipient], msg.as_string())
 	s.close()
 
-	listener.run('/usr/bin/systemctl', ['systemctl', 'stop', 'univention-directory-listener'], uid=0, wait=True)
+	run('/usr/bin/systemctl', ['systemctl', 'stop', 'univention-directory-listener'], uid=0)
 
 
 def handler(dn, new, listener_old, operation):
@@ -1028,7 +1028,7 @@ def clean():
 	# init_slapd('stop')
 
 	# FIXME
-	listener.run('/usr/bin/killall', ['killall', '-9', 'slapd'], uid=0)
+	run('/usr/bin/killall', ['killall', '-9', 'slapd'], uid=0)
 	time.sleep(1)  # FIXME
 
 	dirname = '/var/lib/univention-ldap/ldap'
@@ -1041,7 +1041,7 @@ def clean():
 				pass
 		if os.path.exists(LDIF_FILE):
 			os.unlink(LDIF_FILE)
-	listener.run('/usr/sbin/univention-config-registry', ['univention-config-registry', 'commit', '/var/lib/univention-ldap/ldap/DB_CONFIG'], uid=0)
+	run('/usr/sbin/univention-config-registry', ['univention-config-registry', 'commit', '/var/lib/univention-ldap/ldap/DB_CONFIG'], uid=0)
 
 
 def initialize():
@@ -1102,5 +1102,5 @@ get_password.RE_ROOTDN = re.compile(r'^rootpw[ \t]+"((?:[^"\\]|\\["\\])+)"')
 
 def init_slapd(arg):
 	# type: (str) -> None
-	listener.run('/etc/init.d/slapd', ['slapd', arg], uid=0)
+	run('/etc/init.d/slapd', ['slapd', arg], uid=0)
 	time.sleep(1)

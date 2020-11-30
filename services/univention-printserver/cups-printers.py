@@ -32,7 +32,7 @@
 
 from __future__ import absolute_import
 
-from listener import SetUID
+from listener import SetUID, run
 import listener
 import os
 import time
@@ -107,7 +107,7 @@ def lpadmin(args):
 	# Show this info message by default
 	ud.debug(ud.LISTENER, ud.WARN, "cups-printers: info: univention-lpadmin %s" % ' '.join(quoted_args))
 
-	rc = listener.run('/usr/sbin/univention-lpadmin', ['univention-lpadmin'] + args, uid=0)
+	rc = run('/usr/sbin/univention-lpadmin', ['univention-lpadmin'] + args, uid=0)
 	if rc != 0:
 		ud.debug(ud.LISTENER, ud.ERROR, "cups-printers: Failed to execute the univention-lpadmin command. Please check the cups state.")
 		filename = os.path.join('/var/cache/univention-printserver/', '%f.sh' % time.time())
@@ -377,7 +377,7 @@ def reload_cups_daemon():
 	daemon = 'cups'
 	if os.path.exists(script):
 		ud.debug(ud.LISTENER, ud.PROCESS, "cups-printers: cups reload")
-		listener.run(script, [daemon, 'reload'], uid=0)
+		run(script, [daemon, 'reload'], uid=0)
 	else:
 		ud.debug(ud.LISTENER, ud.PROCESS, "cups-printers: no %s to init script found")
 

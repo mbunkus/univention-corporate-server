@@ -32,7 +32,7 @@
 
 from __future__ import absolute_import
 
-from listener import SetUID
+from listener import SetUID, run
 import listener
 import os
 import re
@@ -206,8 +206,4 @@ def postrun():
 	initscript = __initscript
 	if listener.configRegistry.is_true("nagios/client/autostart"):
 		univention.debug.debug(univention.debug.LISTENER, univention.debug.INFO, 'NRPED: Restarting server')
-		listener.setuid(0)
-		try:
-			listener.run(initscript, ['nagios-nrpe-server', 'restart'], uid=0)
-		finally:
-			listener.unsetuid()
+		run(initscript, ['nagios-nrpe-server', 'restart'], uid=0)

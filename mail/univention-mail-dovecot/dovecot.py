@@ -35,6 +35,7 @@ from __future__ import absolute_import
 import os
 from six.moves import cPickle as pickle
 
+from listener import run
 import listener
 from univention.mail.dovecot import DovecotListener
 
@@ -89,11 +90,7 @@ class DovecotUserListener(DovecotListener):
 	@staticmethod
 	def flush_auth_cache():
 		# type: () -> None
-		try:
-			listener.setuid(0)
-			listener.run('/usr/bin/doveadm', ["/usr/bin/doveadm", "auth", "cache", "flush"], uid=0)
-		finally:
-			listener.unsetuid()
+		run('/usr/bin/doveadm', ["/usr/bin/doveadm", "auth", "cache", "flush"], uid=0)
 
 
 def load_old(old):
