@@ -29,11 +29,9 @@
 from __future__ import absolute_import
 import os
 import inspect
-from contextlib import contextmanager
 from six import reraise, with_metaclass
 
-from listener import configRegistry
-import listener
+from listener import SetUID, configRegistry
 from univention.admin.uldap import access, position
 from univention.listener.handler_logging import get_logger
 from univention.listener.exceptions import ListenerModuleConfigurationError, ListenerModuleRuntimeError
@@ -177,7 +175,6 @@ class ListenerModuleHandler(with_metaclass(HandlerMetaClass)):
 		pass
 
 	@staticmethod
-	@contextmanager
 	def as_root():
 		"""
 		Contextmanager to temporarily change the effective UID of the current
@@ -190,14 +187,7 @@ class ListenerModuleHandler(with_metaclass(HandlerMetaClass)):
 		aware that :py:func:`listener.unsetuid()` will not be possible
 		afterwards, as that requires root privileges.
 		"""
-		old_uid = os.geteuid()
-		try:
-			if old_uid != 0:
-				listener.setuid(0)
-			yield
-		finally:
-			if old_uid != 0:
-				listener.unsetuid()
+		return SetUID(0)
 
 	@classmethod
 	def diff(cls, old, new, keys=None, ignore_metadata=True):

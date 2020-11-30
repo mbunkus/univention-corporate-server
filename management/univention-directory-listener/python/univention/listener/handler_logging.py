@@ -49,7 +49,7 @@ from logging.handlers import TimedRotatingFileHandler
 from collections import Mapping
 from six import string_types, text_type, PY2
 
-import listener
+from listener import SetUID
 import univention.debug as ud
 from univention.config_registry import ConfigRegistry
 
@@ -71,14 +71,9 @@ class UniFileHandler(TimedRotatingFileHandler):
 		adm_gid = grp.getgrnam('adm').gr_gid
 		if file_stat.st_uid != listener_uid or file_stat.st_gid != adm_gid:
 			old_uid = os.geteuid()
-			try:
-				if old_uid != 0:
-					listener.setuid(0)
+			with SetUID(0 if old_uid != 0 else -1):
 				os.fchown(stream.fileno(), listener_uid, adm_gid)
 				os.fchmod(stream.fileno(), stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP)
-			finally:
-				if old_uid != 0:
-					listener.unsetuid()
 		return stream
 
 
@@ -178,18 +173,13 @@ def get_logger(name, path=None):
 		adm_grp = grp.getgrnam('adm').gr_gid
 		if not os.path.isdir(log_dir):
 			old_uid = os.geteuid()
-			try:
-				if old_uid != 0:
-					listener.setuid(0)
+			with SetUID(0 if old_uid != 0 else -1):
 				os.mkdir(log_dir)
 				os.chown(log_dir, listener_uid, adm_grp)
 				os.chmod(
 					log_dir,
 					stat.S_ISGID | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR | stat.S_IRGRP | stat.S_IXGRP
 				)
-			finally:
-				if old_uid != 0:
-					listener.unsetuid()
 		_logger_cache[name] = get_listener_logger(logger_name, file_path)
 	return _logger_cache[name]
 
