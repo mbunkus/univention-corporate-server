@@ -84,11 +84,6 @@ def del_system(sysname):
 	return retcode
 
 
-def initialize():
-	# TODO: call add_system for every system in the directory already
-	pass
-
-
 def handler(dn, new, old):
 	# type: (str, dict, dict) -> None
 	univention.debug.debug(univention.debug.LISTENER, univention.debug.INFO, "pkgdb handler dn=%s" % (dn))
@@ -111,11 +106,3 @@ def handler(dn, new, old):
 					file.close()
 	finally:
 		listener.unsetuid()
-
-
-def postrun():
-	pass
-
-
-def clean():
-	pass
