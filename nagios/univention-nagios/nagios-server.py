@@ -121,9 +121,9 @@ __exthostinfo_mapping = {
 __reload = False
 
 
+@SetUID(0)
 def writeTimeperiod(filename, name, alias, periods):
 	with open(filename, 'w') as fp:
-		fp = open(filename, 'w')
 		fp.write('# Warning: This file is auto-generated and might be overwritten.\n')
 		fp.write('#          Please use univention-directory-manager instead.\n')
 		fp.write('# Warnung: Diese Datei wurde automatisch generiert und wird\n')
@@ -149,7 +149,6 @@ def writeTimeperiod(filename, name, alias, periods):
 		if periods[6]:
 			fp.write('    sunday            %s\n' % periods[6])
 		fp.write('}\n')
-		fp.close()
 
 		ud.debug(ud.LISTENER, ud.INFO, 'NAGIOS-SERVER: timeperiod %s written' % name)
 
@@ -207,8 +206,8 @@ def hostDeleted(new, old):
 @SetUID(0)
 def createContact(contact):
 	# type: (str) -> None
-		filename = '%s%s.cfg' % (__contactsdir, contact)
-		fp = open(filename, 'w')
+	filename = '%s%s.cfg' % (__contactsdir, contact)
+	with open(filename, 'w') as fp:
 		fp.write('# Warning: This file is auto-generated and might be overwritten.\n')
 		fp.write('#          Please use univention-admin instead.\n')
 		fp.write('# Warnung: Diese Datei wurde automatisch generiert und wird\n')
@@ -226,7 +225,6 @@ def createContact(contact):
 		fp.write('    service_notification_commands  notify-service-by-email\n')
 		fp.write('    email                          %s\n' % contact)
 		fp.write('}\n')
-		fp.close()
 
 		ud.debug(ud.LISTENER, ud.INFO, 'NAGIOS-SERVER: contact %s written' % contact)
 
@@ -248,8 +246,8 @@ def removeContactIfUnused(contact):
 @SetUID(0)
 def createContactGroup(grpname, contactlist):
 	# type: (str, list) -> None
-		filename = '%s%s.cfg' % (__contactgrpsdir, grpname)
-		fp = open(filename, 'w')
+	filename = '%s%s.cfg' % (__contactgrpsdir, grpname)
+	with open(filename, 'w') as fp:
 		fp.write('# Warning: This file is auto-generated and might be overwritten.\n')
 		fp.write('#          Please use univention-admin instead.\n')
 		fp.write('# Warnung: Diese Datei wurde automatisch generiert und wird\n')
@@ -261,16 +259,15 @@ def createContactGroup(grpname, contactlist):
 		fp.write('    alias                Gruppe %s\n' % grpname)
 		fp.write('    members              %s\n' % ', '.join(contactlist))
 		fp.write('}\n')
-		fp.close()
 
-		ud.debug(ud.LISTENER, ud.INFO, 'NAGIOS-SERVER: contactgroup %s written: members=%s' % (grpname, contactlist))
-		# create missing contacts
-		for contact in contactlist:
-			if not os.path.exists(os.path.join(__contactsdir, '%s.cfg' % contact)):
-				createContact(contact)
+	ud.debug(ud.LISTENER, ud.INFO, 'NAGIOS-SERVER: contactgroup %s written: members=%s' % (grpname, contactlist))
+	# create missing contacts
+	for contact in contactlist:
+		if not os.path.exists(os.path.join(__contactsdir, '%s.cfg' % contact)):
+			createContact(contact)
 
-		# create default timeperiod if missing
-		createDefaultTimeperiod()
+	# create default timeperiod if missing
+	createDefaultTimeperiod()
 
 
 def updateContactGroup(fqdn, new, old):
@@ -318,21 +315,17 @@ def readHostGroup(grpname):
 		return []
 
 
+@SetUID(0)
 def writeHostGroup(grpname, members):
 	# type: (str, list) -> None
 	grp_filename = os.path.join(__hostgrpsdir, '%s.cfg' % grpname)
 
-	listener.setuid(0)
-	try:
-		fp = open(grp_filename, 'w')
+	with open(grp_filename, 'w') as fp:
 		fp.write('define hostgroup {\n')
 		fp.write('    hostgroup_name     %s\n' % grpname)
 		fp.write('    alias              Hostgroup %s\n' % grpname)
 		fp.write('    members            %s\n' % ', '.join(members))
 		fp.write('}')
-		fp.close()
-	finally:
-		listener.unsetuid()
 
 
 def deleteHostGroup(grpname):
@@ -375,9 +368,9 @@ def handleService(dn, new, old):
 	if new:
 		with SetUID(0):
 			for host in new.get('univentionNagiosHostname', []):
-					new_cn = new['cn'][0].decode('UTF-8')
-					filename = os.path.join(__servicesdir, '%s,%s.cfg' % (new_cn, host.decode('UTF-8')))
-					fp = open(filename, 'w')
+				new_cn = new['cn'][0].decode('UTF-8')
+				filename = os.path.join(__servicesdir, '%s,%s.cfg' % (new_cn, host.decode('UTF-8')))
+				with open(filename, 'w') as fp:
 					fp.write('# Warning: This file is auto-generated and might be overwritten.\n')
 					fp.write('#          Please use univention-admin instead.\n')
 					fp.write('# Warnung: Diese Datei wurde automatisch generiert und wird\n')
@@ -405,13 +398,12 @@ def handleService(dn, new, old):
 					fp.write('    notification_options    %s\n' % new['univentionNagiosNotificationOptions'][0].decode('UTF-8'))
 					fp.write('    contact_groups          cg-%s\n' % host)
 					fp.write('}\n')
-					fp.close()
 
-					cg_filename = os.path.join(__contactgrpsdir, 'cg-%s.cfg' % host)
-					if not os.path.exists(cg_filename):
-						ud.debug(ud.LISTENER, ud.ERROR, 'NAGIOS-SERVER: handleService: contactgrp for host %s does not exist - using fallback' % host)
+				cg_filename = os.path.join(__contactgrpsdir, 'cg-%s.cfg' % host)
+				if not os.path.exists(cg_filename):
+					ud.debug(ud.LISTENER, ud.ERROR, 'NAGIOS-SERVER: handleService: contactgrp for host %s does not exist - using fallback' % host)
 
-						createContactGroup('cg-%s' % host, [__fallbackContact])
+					createContactGroup('cg-%s' % host, [__fallbackContact])
 
 
 def getUniventionComputerType(new):
@@ -441,6 +433,7 @@ def getUniventionComputerType(new):
 	return 'unknown'
 
 
+@SetUID(0)
 def createHostExtInfo(fqdn, new):
 	# type: (str, dict) -> None
 	fn = os.path.join(__hostextinfodir, '%s.cfg' % fqdn)
@@ -451,9 +444,7 @@ def createHostExtInfo(fqdn, new):
 			ud.debug(ud.LISTENER, ud.ERROR, 'NAGIOS-SERVER: createHostExtInfo: unknown host type "%s" of %s' % (hosttype, fqdn))
 			return
 
-		listener.setuid(0)
-		try:
-			fp = open(fn, 'w')
+		with open(fn, 'w') as fp:
 			fp.write('# Warning: This file is auto-generated and might be overwritten.\n')
 			fp.write('#          Please use univention-admin instead.\n')
 			fp.write('# Warnung: Diese Datei wurde automatisch generiert und wird\n')
@@ -466,10 +457,6 @@ def createHostExtInfo(fqdn, new):
 			fp.write('    vrml_image              %s\n' % __exthostinfo_mapping[hosttype]['vrml_image'])
 			fp.write('    statusmap_image         %s\n' % __exthostinfo_mapping[hosttype]['statusmap_image'])
 			fp.write('}\n')
-			fp.close()
-
-		finally:
-			listener.unsetuid()
 
 		ud.debug(ud.LISTENER, ud.INFO, 'NAGIOS-SERVER: extended info for host %s written' % fqdn)
 
@@ -571,38 +558,37 @@ def handleHost(dn, new, old):
 			return
 
 		with SetUID(0):
-			fp = open(new_host_filename, 'w')
-			fp.write('# Warning: This file is auto-generated and might be overwritten.\n')
-			fp.write('#          Please use univention-admin instead.\n')
-			fp.write('# Warnung: Diese Datei wurde automatisch generiert und wird\n')
-			fp.write('#          automatisch ueberschrieben. Bitte benutzen Sie\n')
-			fp.write('#          stattdessen den Univention Admin.\n')
-			fp.write('\n')
-			fp.write('define host {\n')
-			fp.write('    host_name               %s\n' % newfqdn)
-			if 'description' in new and new['description']:
-				fp.write('    alias                   %s (%s)\n' % (newfqdn, new['description'][0].decode('UTF-8')))
-			else:
-				fp.write('    alias                   %s\n' % newfqdn)
-			fp.write('    address                 %s\n' % new['aRecord'][0].decode('ASCII'))
-			if 'univentionNagiosParent' in new and new['univentionNagiosParent']:
-				fp.write('    parents                 %s\n' % b', '.join(new['univentionNagiosParent']).decode('UTF-8'))
+			with open(new_host_filename, 'w') as fp:
+				fp.write('# Warning: This file is auto-generated and might be overwritten.\n')
+				fp.write('#          Please use univention-admin instead.\n')
+				fp.write('# Warnung: Diese Datei wurde automatisch generiert und wird\n')
+				fp.write('#          automatisch ueberschrieben. Bitte benutzen Sie\n')
+				fp.write('#          stattdessen den Univention Admin.\n')
+				fp.write('\n')
+				fp.write('define host {\n')
+				fp.write('    host_name               %s\n' % newfqdn)
+				if 'description' in new and new['description']:
+					fp.write('    alias                   %s (%s)\n' % (newfqdn, new['description'][0].decode('UTF-8')))
+				else:
+					fp.write('    alias                   %s\n' % newfqdn)
+				fp.write('    address                 %s\n' % new['aRecord'][0].decode('ASCII'))
+				if 'univentionNagiosParent' in new and new['univentionNagiosParent']:
+					fp.write('    parents                 %s\n' % b', '.join(new['univentionNagiosParent']).decode('UTF-8'))
 
-			if configRegistry.is_true("nagios/server/hostcheck/enable", False):
-				fp.write('    check_command           check-host-alive\n')
+				if configRegistry.is_true("nagios/server/hostcheck/enable", False):
+					fp.write('    check_command           check-host-alive\n')
 
-			fp.write('    max_check_attempts      10\n')
-			fp.write('    contact_groups          cg-%s\n' % newfqdn)
+				fp.write('    max_check_attempts      10\n')
+				fp.write('    contact_groups          cg-%s\n' % newfqdn)
 
-			notification_interval = 0
-			if "nagios/server/hostcheck/notificationinterval" in configRegistry and configRegistry["nagios/server/hostcheck/notificationinterval"]:
-				notification_interval = configRegistry["nagios/server/hostcheck/notificationinterval"]
+				notification_interval = 0
+				if "nagios/server/hostcheck/notificationinterval" in configRegistry and configRegistry["nagios/server/hostcheck/notificationinterval"]:
+					notification_interval = configRegistry["nagios/server/hostcheck/notificationinterval"]
 
-			fp.write('    notification_interval   %s\n' % notification_interval)
-			fp.write('    notification_period     %s\n' % __predefinedTimeperiod)
-			fp.write('    notification_options    d,u,r\n')
-			fp.write('}\n')
-			fp.close()
+				fp.write('    notification_interval   %s\n' % notification_interval)
+				fp.write('    notification_period     %s\n' % __predefinedTimeperiod)
+				fp.write('    notification_options    d,u,r\n')
+				fp.write('}\n')
 
 		ud.debug(ud.LISTENER, ud.INFO, 'NAGIOS-SERVER: host %s written' % newfqdn)
 
@@ -685,13 +671,8 @@ def postrun():
 		# otherwise if nagios is running, ask nagios to reload config
 		p = subprocess.Popen(('pidof', '/usr/sbin/nagios'), stdout=subprocess.PIPE)
 		pidlist, stderr = p.communicate()
-		listener.setuid(0)
-		null = open(os.path.devnull, 'w')
-		try:
+		with SetUID(0), open(os.path.devnull, 'w') as null:
 			retcode = subprocess.call(('nagios', '-v', '/etc/nagios/nagios.cfg'), stdout=null, stderr=null)
-		finally:
-			null.close()
-		listener.unsetuid()
 		if not pidlist.strip():
 			if retcode == 0:
 				if configRegistry.is_true("nagios/server/autostart", False):

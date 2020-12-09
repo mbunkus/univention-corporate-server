@@ -87,13 +87,11 @@ def handler(dn, new, old):
 		if old and not new:
 			if 'uid' in old:
 				if del_system(old['uid'][0]) != 0:
-					file = open(os.path.join(DELETE_DIR, old['uid'][0]), 'w')
-					file.write(old['uid'][0] + '\n')
-					file.close()
+					with open(os.path.join(DELETE_DIR, old['uid'][0]), 'w') as fd:
+						fd.write(old['uid'][0] + '\n')
 
 		elif new and not old:
 			if 'uid' in new:
 				if (add_system(new['uid'][0])) != 0:
-					file = open(os.path.join(ADD_DIR, new['uid'][0]), 'w')
-					file.write(new['uid'][0] + '\n')
-					file.close()
+					with open(os.path.join(ADD_DIR, new['uid'][0]), 'w') as fd:
+						fd.write(new['uid'][0] + '\n')

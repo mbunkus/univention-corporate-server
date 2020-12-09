@@ -106,15 +106,14 @@ def writeConfig(fqdn, new):
 
 	with SetUID(0):
 		filename = os.path.join(__confdir, "%s.cfg" % name)
-		fp = open(filename, 'w')
-		fp.write('# Warning: This file is auto-generated and might be overwritten.\n')
-		fp.write('#          Please use univention-directory-manager instead.\n')
-		fp.write('# Warnung: Diese Datei wurde automatisch generiert und wird\n')
-		fp.write('#          automatisch ueberschrieben. Bitte benutzen Sie\n')
-		fp.write('#          stattdessen den Univention Directory Manager.\n')
-		fp.write('\n')
-		fp.write('command[%s]=%s\n' % (name, cmdline))
-		fp.close()
+		with open(filename, 'w') as fp:
+			fp.write('# Warning: This file is auto-generated and might be overwritten.\n')
+			fp.write('#          Please use univention-directory-manager instead.\n')
+			fp.write('# Warnung: Diese Datei wurde automatisch generiert und wird\n')
+			fp.write('#          automatisch ueberschrieben. Bitte benutzen Sie\n')
+			fp.write('#          stattdessen den Univention Directory Manager.\n')
+			fp.write('\n')
+			fp.write('command[%s]=%s\n' % (name, cmdline))
 
 		univention.debug.debug(univention.debug.LISTENER, univention.debug.INFO, 'NAGIOS-CLIENT: service %s written' % name)
 

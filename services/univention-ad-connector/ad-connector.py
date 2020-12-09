@@ -73,20 +73,18 @@ def _save_old_object(directory, dn, old):
 	# type: (str, str, Dict[str, List[bytes]]) -> None
 	filename = os.path.join(directory, 'tmp', 'old_dn')
 
-	f = open(filename, 'w+')
-	os.chmod(filename, 0o600)
-	p = cPickle.Pickler(f)
-	p.dump((dn, old))
-	p.clear_memo()
-	f.close()
+	with open(filename, 'w+')as f:
+		os.chmod(filename, 0o600)
+		p = cPickle.Pickler(f)
+		p.dump((dn, old))
+		p.clear_memo()
 
 
 def _load_old_object(directory):
 	# type: (str) -> Tuple[str, Dict[str, List[bytes]]]
-	f = open(os.path.join(directory, 'tmp', 'old_dn'), 'r')
-	p = cPickle.Unpickler(f)
-	(old_dn, old_object) = p.load()
-	f.close()
+	with open(os.path.join(directory, 'tmp', 'old_dn'), 'r') as f:
+		p = cPickle.Unpickler(f)
+		(old_dn, old_object) = p.load()
 
 	return (old_dn, old_object)
 
