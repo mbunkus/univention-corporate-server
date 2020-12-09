@@ -86,13 +86,11 @@ class DovecotListener(object):
 				raise
 			self.read_from_ext_proc_as_root(["/usr/bin/doveadm", "kick", email])
 			try:
-				self.listener.setuid(0)
-				shutil.rmtree(old_home_calc, ignore_errors=True)
+				with SetUID(0):
+					shutil.rmtree(old_home_calc, ignore_errors=True)
 			except Exception:
 				self.log_e("dovecot: Delete mailbox: Error removing directory '%s' from disk." % old_home_calc)
 				raise
-			finally:
-				self.listener.unsetuid()
 		else:
 			self.log_p("dovecot: Deleting of mailboxes disabled, not removing '%s' (dn '%s')." % (email, dn))
 
@@ -168,16 +166,14 @@ class DovecotListener(object):
 			self.log_p("Renaming of mailboxes disabled, not moving mail home (of mail '%s') from '%s' to '%s." % (email, old_path, new_path))
 			return
 		try:
-			self.listener.setuid(0)
-			st = os.stat(old_path)
-			shutil.move(old_path, new_path)
-			self.chown_r(new_path, st[stat.ST_UID], st[stat.ST_GID])
+			with SetUID(0):
+				st = os.stat(old_path)
+				shutil.move(old_path, new_path)
+				self.chown_r(new_path, st[stat.ST_UID], st[stat.ST_GID])
 		except Exception:
 			self.log_e("Failed to move mail home (of mail '%s') from '%s' to '%s'.\n%s" % (
 				email, old_path, new_path, traceback.format_exc()))
 			raise
-		finally:
-			self.listener.unsetuid()
 
 	def get_maillocation(self):
 		# type: () -> str
@@ -221,13 +217,11 @@ class DovecotListener(object):
 	def get_masteruser_credentials(self):
 		# type: () -> Tuple[str, str]
 		try:
-			self.listener.setuid(0)
-			return re.findall(r"(\S+):{PLAIN}(\S+)::::::", open("/etc/dovecot/master-users").read())[0]
+			with SetUID(0):
+				return re.findall(r"(\S+):{PLAIN}(\S+)::::::", open("/etc/dovecot/master-users").read())[0]
 		except Exception:
 			self.log_e("Failed to get masteruser password.\n%s" % traceback.format_exc())
 			raise
-		finally:
-			self.listener.unsetuid()
 
 	def get_dovecot_user(self):
 		# type: () -> Tuple[str, str]
@@ -247,25 +241,21 @@ class DovecotListener(object):
 		user, group = self.get_dovecot_user()
 		dovecot_uid = pwd.getpwnam(user).pw_uid
 		dovecot_gid = grp.getgrnam(group).gr_gid
-		# spool directory has to be traversed as root
-		self.listener.setuid(0)
-		parent = os.path.dirname(dir)
-		if not os.path.exists(parent):
-			self.listener.unsetuid()
-			self.mkdir_p(parent)
-		else:
-			self.listener.unsetuid()
-
 		try:
-			self.listener.setuid(0)
-			if not os.path.exists(dir):
-				os.mkdir(dir, 0o2700)
-				os.chown(dir, dovecot_uid, dovecot_gid)
+			with SetUID(0):
+				self._mkdir_p(dir, dovecot_uid, dovecot_gid)
 		except Exception:
 			self.log_e("Failed to create directory '%s'.\n%s" % (dir, traceback.format_exc()))
 			raise
-		finally:
-			self.listener.unsetuid()
+
+	def _mkdir_p(self, path, uid, gid):
+		# type: (str, int, int) -> None
+		if os.path.exists(path):
+			return
+		self._mkdir_p(os.path.dirname(path), uid, gid)
+
+		os.mkdir(path, 0o2700)
+		os.chown(path, uid, gid)
 
 	@classmethod
 	def chown_r(cls, path, uid, gid):

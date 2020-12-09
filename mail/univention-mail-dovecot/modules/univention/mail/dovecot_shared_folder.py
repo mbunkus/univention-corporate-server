@@ -215,13 +215,11 @@ class DovecotSharedFolderListener(DovecotListener):
 		# remove mailbox from disk
 		if configRegistry.is_true("mail/dovecot/mailbox/delete", False):
 			try:
-				self.listener.setuid(0)
-				shutil.rmtree(path, ignore_errors=True)
+				with SetUID(0):
+					shutil.rmtree(path, ignore_errors=True)
 			except Exception:
 				self.log_e("Error deleting mailbox '%s'." % old_mailbox)
 				return
-			finally:
-				self.listener.unsetuid()
 			self.log_p("Deleted mailbox '%s'." % old_mailbox)
 		else:
 			self.log_p("Deleting of mailboxes disabled (mailbox '%s')." % old_mailbox)
@@ -263,14 +261,12 @@ class DovecotSharedFolderListener(DovecotListener):
 					new_maildir = os.path.join(new_user_home, "Maildir")
 					try:
 						# rename mailbox
-						self.listener.setuid(0)
-						shutil.move(old_maildir, new_maildir)
+						with SetUID(0):
+							shutil.move(old_maildir, new_maildir)
 					except Exception:
 						self.log_e("Failed to move mail home (of '%s') from '%s' to '%s'.\n%s" % (
 							new_mailbox, old_maildir, new_maildir, traceback.format_exc()))
 						raise
-					finally:
-						self.listener.unsetuid()
 				except Exception:
 					self.log_e("Could not rename/move mailbox ('%s' -> '%s').\n%s" % (old_mailbox, new_mailbox, traceback.format_exc()))
 					return
@@ -315,14 +311,12 @@ class DovecotSharedFolderListener(DovecotListener):
 					new_maildir = os.path.join(pub_loc, ".INBOX")
 					try:
 						# rename mailbox
-						self.listener.setuid(0)
-						shutil.move(old_maildir, new_maildir)
+						with SetUID(0):
+							shutil.move(old_maildir, new_maildir)
 					except Exception:
 						self.log_e("Failed to move mail home (of '%s') from '%s' to '%s'.\n%s" % (
 							new_mailbox, old_maildir, new_maildir, traceback.format_exc()))
 						raise
-					finally:
-						self.listener.unsetuid()
 					self.remove_global_acls(old)
 				except Exception:
 					self.log_e("Could not rename/move mailbox ('%s' -> '%s').\n%s" % (old_mailbox, new_mailbox, traceback.format_exc()))
@@ -453,14 +447,12 @@ class DovecotSharedFolderListener(DovecotListener):
 				for pf in public_folders
 			]
 		try:
-			self.listener.setuid(0)
-			handler_set(["mail/dovecot/internal/sharedfolders=%s" % " ".join(emails_quota)])
-			self.read_from_ext_proc_as_root(["/usr/bin/doveadm", "reload"])
+			with SetUID(0):
+				handler_set(["mail/dovecot/internal/sharedfolders=%s" % " ".join(emails_quota)])
+				self.read_from_ext_proc_as_root(["/usr/bin/doveadm", "reload"])
 		except Exception:
 			self.log_e("update_public_mailbox_configuration(): Failed to update public mailbox configuration:\n%s" % traceback.format_exc())
 			raise
-		finally:
-			self.listener.unsetuid()
 		self.log_p("Updated shared mailbox configuration.")
 
 	def unsubscribe_from_mailbox(self, users, mailbox):  # type: (List[str], str) -> None
