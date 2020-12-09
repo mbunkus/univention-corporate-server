@@ -356,10 +356,8 @@ class UniventionLDAPExtension(six.with_metaclass(ABCMeta)):
 			if p.returncode == 0:
 				regex = re.compile('^Object created: (.*)$', re.M)
 				m = regex.search(stdout)
-				if m:
-					new_object_dn = m.group(1)
-				else:
-					new_object_dn = None
+				assert m
+				new_object_dn = m.group(1)
 
 				appidentifier = os.environ.get('UNIVENTION_APP_IDENTIFIER')
 				if appidentifier:
@@ -532,7 +530,7 @@ class UniventionLDAPExtensionWithListenerHandler(six.with_metaclass(ABCMeta, Uni
 		self.ucr_info_basedir = '%s/info' % self.ucr_template_dir
 
 	@abstractmethod
-	def handler(self, dn, new, old, name=None):
+	def handler(self, dn, new, old, name):
 		# type: (str, Optional[Dict[str, List[bytes]]], Optional[Dict[str, List[bytes]]], str) -> None
 		pass
 
@@ -544,14 +542,14 @@ class UniventionLDAPSchema(UniventionLDAPExtensionWithListenerHandler):
 	filesuffix = ".schema"
 	basedir = '/var/lib/univention-ldap/local-schema'
 
-	def handler(self, dn, new, old, name=None):
+	def handler(self, dn, new, old, name):
 		# type: (str, Optional[Dict[str, List[bytes]]], Optional[Dict[str, List[bytes]]], str) -> None
 		try:
 			return self._handler(dn, new, old, name)
 		except BaseDirRestriction as exc:
 			ud.debug(ud.LISTENER, ud.ERROR, '%r basedir conflict: %s' % (dn, exc))
 
-	def _handler(self, dn, new, old, name=None):
+	def _handler(self, dn, new, old, name):
 		# type: (str, Optional[Dict[str, List[bytes]]], Optional[Dict[str, List[bytes]]], str) -> None
 		"""Handle LDAP schema extensions on Primary and Backup Directory Nodes"""
 		if not configRegistry.get('server/role') in ('domaincontroller_master', 'domaincontroller_backup'):
@@ -562,7 +560,7 @@ class UniventionLDAPSchema(UniventionLDAPExtensionWithListenerHandler):
 			if not new_version:
 				return
 
-			new_pkgname = new.get('univentionOwnedByPackage', [None])[0]
+			new_pkgname = new.get('univentionOwnedByPackage', [b''])[0]
 			if not new_pkgname:
 				return
 
@@ -576,7 +574,7 @@ class UniventionLDAPSchema(UniventionLDAPExtensionWithListenerHandler):
 					return
 				ud.debug(ud.LISTENER, ud.INFO, '%s: extension %s: changed attributes: %s' % (name, new['cn'][0].decode('UTF-8'), diff_keys))
 
-				if new_pkgname == old.get('univentionOwnedByPackage', [None])[0]:
+				if new_pkgname == old.get('univentionOwnedByPackage', [b''])[0]:
 					old_version = old.get('univentionOwnedByPackageVersion', [b'0'])[0].decode('UTF-8')
 					rc = apt.apt_pkg.version_compare(new_version, old_version)
 					if not rc > -1:
@@ -598,7 +596,7 @@ class UniventionLDAPSchema(UniventionLDAPExtensionWithListenerHandler):
 				if old:
 					ud.debug(ud.LISTENER, ud.ERROR, 'invalid filename detected during modification. removing file!')
 					set_handler_message(name, dn, 'invalid filename detected during modification. removing file!')
-					self._handler(dn, [], old, name)
+					self._handler(dn, {}, old, name)
 				raise exc
 
 			with SetUID(0):
@@ -729,14 +727,14 @@ class UniventionLDAPACL(UniventionLDAPExtensionWithListenerHandler):
 	filesuffix = ".acl"
 	file_prefix = 'ldapacl_'
 
-	def handler(self, dn, new, old, name=None):
+	def handler(self, dn, new, old, name):
 		# type: (str, Optional[Dict[str, List[bytes]]], Optional[Dict[str, List[bytes]]], str) -> None
 		try:
 			return self._handler(dn, new, old, name)
 		except BaseDirRestriction as exc:
 			ud.debug(ud.LISTENER, ud.ERROR, '%r basedir conflict: %s' % (dn, exc))
 
-	def _handler(self, dn, new, old, name=None):
+	def _handler(self, dn, new, old, name):
 		# type: (str, Optional[Dict[str, List[bytes]]], Optional[Dict[str, List[bytes]]], str) -> None
 		"""Handle LDAP ACL extensions on Primary, Backup and Replica Directory Nodes"""
 
@@ -773,7 +771,7 @@ class UniventionLDAPACL(UniventionLDAPExtensionWithListenerHandler):
 			if not new_version:
 				return
 
-			new_pkgname = new.get('univentionOwnedByPackage', [None])[0]
+			new_pkgname = new.get('univentionOwnedByPackage', [b''])[0]
 			if not new_pkgname:
 				return
 
@@ -791,7 +789,7 @@ class UniventionLDAPACL(UniventionLDAPExtensionWithListenerHandler):
 					return
 				ud.debug(ud.LISTENER, ud.INFO, '%s: extension %s: changed attributes: %s' % (name, new['cn'][0].decode('UTF-8'), diff_keys))
 
-				if new_pkgname == old.get('univentionOwnedByPackage', [None])[0]:
+				if new_pkgname == old.get('univentionOwnedByPackage', [b''])[0]:
 					old_version = old.get('univentionOwnedByPackageVersion', [b'0'])[0].decode('UTF-8')
 					rc = apt.apt_pkg.version_compare(new_version, old_version)
 					if not rc > -1:
@@ -814,7 +812,7 @@ class UniventionLDAPACL(UniventionLDAPExtensionWithListenerHandler):
 				if old:
 					ud.debug(ud.LISTENER, ud.ERROR, 'invalid filename detected during modification. removing file!')
 					set_handler_message(name, dn, 'invalid filename detected during modification. removing file!')
-					self._handler(dn, [], old, name)
+					self._handler(dn, {}, old, name)
 				raise exc
 			with SetUID(0):
 				backup_filename = None

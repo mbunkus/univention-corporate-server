@@ -126,7 +126,7 @@ def filter_match(object):
 def get_testparm_var(smbconf, sectionname, varname):
 	# type: (str, str, str) -> str
 	if not os.path.exists("/usr/bin/testparm"):
-		return
+		return ''
 
 	cmd = ["/usr/bin/testparm", "-s", "-l", "--section-name=%s" % sectionname, "--parameter-name=%s" % varname, smbconf]
 	p1 = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)

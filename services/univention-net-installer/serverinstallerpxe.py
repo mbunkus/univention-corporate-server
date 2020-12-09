@@ -78,7 +78,7 @@ def gen_pxe(new):
 	if args[0] is None:
 		profile = new.get('univentionServerInstallationProfile', EMPTY)[0].decode('UTF-8')
 		if not profile:
-			return
+			return ''
 		url = urljoin(URLBASE, profile)
 
 		vga = configRegistry.get("pxe/installer/vga")

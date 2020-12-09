@@ -59,12 +59,12 @@ REpassword = re.compile("^poll .*? there with password '(.*?)' is '[^']+' here")
 def load_rc(ofile):
 	# type: () -> Optional[int]
 	"""open an textfile with setuid(0) for root-action"""
-	rc = None
 	try:
 		with open(ofile, "r") as fd:
 			rc = fd.readlines()
 	except EnvironmentError as exc:
 		ud.debug(ud.LISTENER, ud.ERROR, 'Failed to open "%s": %s' % (ofile, exc))
+		rc = None
 	return rc
 
 
@@ -165,7 +165,7 @@ def handler(dn, new, old, command):
 		with open(FETCHMAIL_OLD_PICKLE, 'w+') as fd:
 			os.chmod(FETCHMAIL_OLD_PICKLE, 0o600)
 			p = pickle.Pickler(fd)
-			old = p.dump(old)
+			p.dump(old)
 			p.clear_memo()
 
 	flist = load_rc(fn_fetchmailrc)
