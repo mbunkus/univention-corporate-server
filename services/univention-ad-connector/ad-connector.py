@@ -33,8 +33,7 @@
 
 from __future__ import absolute_import
 
-from listener import SetUID
-import listener
+from listener import SetUID, configRegistry as ucr
 import cPickle
 import time
 import os
@@ -61,11 +60,11 @@ init_mode = False
 group_objects = []
 connector_needs_restart = False
 
-dirs = [listener.baseConfig['connector/ad/listener/dir']]
-if 'connector/listener/additionalbasenames' in listener.baseConfig and listener.baseConfig['connector/listener/additionalbasenames']:
-	for configbasename in listener.baseConfig['connector/listener/additionalbasenames'].split(' '):
-		if '%s/ad/listener/dir' % configbasename in listener.baseConfig and listener.baseConfig['%s/ad/listener/dir' % configbasename]:
-			dirs.append(listener.baseConfig['%s/ad/listener/dir' % configbasename])
+dirs = [ucr['connector/ad/listener/dir']]
+if 'connector/listener/additionalbasenames' in ucr and ucr['connector/listener/additionalbasenames']:
+	for configbasename in ucr['connector/listener/additionalbasenames'].split(' '):
+		if '%s/ad/listener/dir' % configbasename in ucr and ucr['%s/ad/listener/dir' % configbasename]:
+			dirs.append(ucr['%s/ad/listener/dir' % configbasename])
 		else:
 			ud.debug(ud.LISTENER, ud.WARN, "ad-connector: additional config basename %s given, but %s/ad/listener/dir not set; ignore basename." % (configbasename, configbasename))
 

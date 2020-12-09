@@ -30,10 +30,10 @@
 
 from __future__ import absolute_import
 
-from listener import SetUID
+from listener import SetUID, configRegistry as ucr
 
 import univention.debug as ud
-from univention.config_registry import ConfigRegistry, handler_set, handler_unset
+from univention.config_registry import handler_set, handler_unset
 
 name = 'univention-saml-idp-config'
 description = 'Replication of identity provider settings'
@@ -46,7 +46,6 @@ LDAP_UCR_MAPPING = {
 
 def handler(dn, new, old):
 	# type: (str, dict, dict) -> None
-	ucr = ConfigRegistry()
 	ucr.load()
 	idp_config_objectdn = ucr.get('saml/idp/configobject', 'id=default-saml-idp,cn=univention,%s' % ucr.get('ldap/base'))
 	with SetUID(0):

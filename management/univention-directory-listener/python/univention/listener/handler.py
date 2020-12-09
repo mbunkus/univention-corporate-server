@@ -32,15 +32,13 @@ import inspect
 from contextlib import contextmanager
 from six import reraise, with_metaclass
 
+from listener import configRegistry
 import listener
 from univention.admin.uldap import access, position
 from univention.listener.handler_logging import get_logger
 from univention.listener.exceptions import ListenerModuleConfigurationError, ListenerModuleRuntimeError
 from univention.listener.handler_configuration import ListenerModuleConfiguration
 from univention.listener.api_adapter import ListenerModuleAdapter
-
-
-listener.configRegistry.load()
 
 
 class HandlerMetaClass(type):
@@ -78,7 +76,7 @@ class ListenerModuleHandler(with_metaclass(HandlerMetaClass)):
 	_configuration_class = ListenerModuleConfiguration
 	_adapter_class = ListenerModuleAdapter
 	config = None
-	ucr = listener.configRegistry
+	ucr = configRegistry
 
 	class Configuration(ListenerModuleConfiguration):
 		"""

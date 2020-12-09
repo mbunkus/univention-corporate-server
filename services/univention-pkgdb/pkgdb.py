@@ -31,9 +31,9 @@
 # <https://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import
+
 import os
-from listener import SetUID
-import listener
+from listener import configRegistry, SetUID
 import subprocess
 import univention.debug as ud
 
@@ -41,9 +41,6 @@ name = 'pkgdb'
 description = 'Package-Database'
 filter = '(|(objectClass=univentionDomainController)(objectClass=univentionClient)(objectClass=univentionMemberServer))'
 attributes = ['uid']
-
-hostname = listener.baseConfig['hostname']
-domainname = listener.baseConfig['domainname']
 
 ADD_DIR = '/var/lib/univention-pkgdb/add'
 DELETE_DIR = '/var/lib/univention-pkgdb/delete'
@@ -54,7 +51,7 @@ def exec_pkgdb(args):
 	ud.debug(ud.LISTENER, ud.INFO, "exec_pkgdb args=%s" % args)
 
 	with SetUID(0):
-		cmd = ['univention-pkgdb-scan', '--db-server=%s.%s' % (hostname, domainname, ), ]
+		cmd = ['univention-pkgdb-scan', '--db-server=%(hostname)s.%(domainname)s' % configRegistry]
 		cmd += args
 		retcode = subprocess.call(cmd)
 

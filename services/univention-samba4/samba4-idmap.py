@@ -33,8 +33,7 @@
 
 from __future__ import absolute_import
 
-from listener import SetUID
-import listener
+from listener import SetUID, configRegistry
 import os
 import time
 import univention.debug as ud
@@ -60,7 +59,7 @@ lp.load('/etc/samba/smb.conf')
 listener.unsetuid()
 
 sidAttribute = 'sambaSID'
-if listener.configRegistry.is_false('connector/s4/mapping/sid', False):
+if configRegistry.is_false('connector/s4/mapping/sid', False):
 	sidAttribute = 'univentionSamba4SID'
 
 __SPECIAL_ACCOUNT_SIDS = {
@@ -323,7 +322,6 @@ def handler(dn, new, old, operation):
 if __name__ == '__main__':
 	from argparse import ArgumentParser
 	import sys
-	from univention.config_registry import ConfigRegistry
 	import subprocess
 	from ldif import LDIFParser
 	import io
@@ -340,9 +338,7 @@ if __name__ == '__main__':
 		sys.exit(1)
 
 	ud.init("stderr", ud.NO_FLUSH, ud.NO_FUNCTION)
-	ucr = ConfigRegistry()
-	ucr.load()
-	ud.set_level(ud.LISTENER, int(ucr.get('listener/debug/level', 2)))
+	ud.set_level(ud.LISTENER, int(configRegistry.get('listener/debug/level', 2)))
 
 	cmd = ['/usr/bin/univention-ldapsearch', '-LLL', filter, 'objectClass']
 	cmd.extend(attributes)

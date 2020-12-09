@@ -38,8 +38,7 @@ configuration directory (should-state) and reload/restart as appropriate.
 
 from __future__ import absolute_import
 
-from listener import SetUID
-import listener
+from listener import SetUID, configRegistry
 import os
 import subprocess
 import univention.debug as ud  # pylint: disable-msg=E0611
@@ -81,7 +80,7 @@ def initialize():
 def prerun():
 	# type: () -> None
 	"""Called before busy period."""
-	listener.configRegistry.load()
+	configRegistry.load()
 
 
 def chgrp_bind(filename):
@@ -153,14 +152,14 @@ def _quote_config_parameter(arg):
 def handler(dn, new, old):
 	# type: (str, dict, dict) -> None
 	"""Handle LDAP changes."""
-	base = listener.configRegistry.get('dns/ldap/base')
+	base = configRegistry.get('dns/ldap/base')
 	if base and not dn.endswith(base):
 		return
 
 	try:
 		if new and not old:
 			# Add
-			_new_zone(listener.configRegistry, new['zoneName'][0].decode('UTF-8'), dn)
+			_new_zone(configRegistry, new['zoneName'][0].decode('UTF-8'), dn)
 		elif old and not new:
 			# Remove
 			_remove_zone(old['zoneName'][0].decode('UTF-8'))
@@ -366,7 +365,7 @@ def postrun():
 	global __zone_created_or_removed
 
 	# Reload UCR
-	listener.configRegistry.load()
+	configRegistry.load()
 
 	try:
 		# Re-create named and proxy inclusion file
@@ -389,7 +388,7 @@ def postrun():
 		do_reload = True
 		zones = []
 
-		dns_backend = listener.configRegistry.get('dns/backend')
+		dns_backend = configRegistry.get('dns/backend')
 		if dns_backend == 'samba4':
 			if not __zone_created_or_removed:
 				do_reload = False

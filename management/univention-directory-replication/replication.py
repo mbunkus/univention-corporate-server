@@ -39,8 +39,7 @@
 
 from __future__ import print_function, absolute_import
 
-from listener import SetUID, run
-import listener
+from listener import SetUID, configRegistry, run
 
 import os
 import ldap
@@ -66,10 +65,10 @@ filter = '(objectClass=*)'  # default filter - may be overwritten later
 attributes = []
 modrdn = '1'
 
-slave = listener.configRegistry['ldap/server/type'] == 'slave'
+slave = configRegistry['ldap/server/type'] == 'slave'
 
-if listener.configRegistry['ldap/slave/filter']:
-	filter = listener.configRegistry['ldap/slave/filter']
+if configRegistry['ldap/slave/filter']:
+	filter = configRegistry['ldap/slave/filter']
 
 LDAP_DIR = '/var/lib/univention-ldap/'
 STATE_DIR = '/var/lib/univention-directory-replication'
@@ -90,7 +89,7 @@ EXCLUDE_ATTRIBUTES = set(attr.lower() for attr in {
 	'pwdGraceUseTime',
 	'pwdReset',
 	'pwdPolicySubentry',
-} | (set() if listener.configRegistry.is_true('ldap/overlay/memberof') else {'memberOf'}))
+} | (set() if configRegistry.is_true('ldap/overlay/memberof') else {'memberOf'}))
 ud.debug(ud.LISTENER, ud.ALL, 'replication: EXCLUDE_ATTRIBUTES=%r' % (EXCLUDE_ATTRIBUTES,))
 
 # don't use built-in OIDs from slapd
@@ -556,9 +555,9 @@ def connect(ldif=False):
 				pw = new_password()
 				init_slapd('restart')
 
-		local_port = int(listener.configRegistry.get('slapd/port', '7389').split(',')[0])
+		local_port = int(configRegistry.get('slapd/port', '7389').split(',')[0])
 		connection = ldap.initialize('ldap://127.0.0.1:%d' % (local_port,))
-		connection.simple_bind_s('cn=update,' + listener.configRegistry['ldap/base'], pw)
+		connection.simple_bind_s('cn=update,' + configRegistry['ldap/base'], pw)
 	else:
 		connection = LDIFObject(LDIF_FILE)
 
@@ -585,7 +584,7 @@ def modlist(old, new):
 		if set_old == set_new:
 			continue
 
-		if key == listener.configRegistry.get('ldap/overlay/memberof/member', 'uniqueMember'):
+		if key == configRegistry.get('ldap/overlay/memberof/member', 'uniqueMember'):
 			# triggers slapd-memberof, where REPLACE is inefficient (Bug #48545)
 			added_items = set_new - set_old
 			removed_items = set_old - set_new
@@ -756,16 +755,16 @@ def _read_dn_from_file(filename):
 
 def check_file_system_space():
 	# type: () -> None
-	if not listener.configRegistry.is_true('ldap/replication/filesystem/check'):
+	if not configRegistry.is_true('ldap/replication/filesystem/check'):
 		return
 
 	stat = os.statvfs(LDAP_DIR)
 	free_space = stat.f_bavail * stat.f_frsize
-	limit = float(listener.configRegistry.get('ldap/replication/filesystem/limit', '10')) * 1024.0 * 1024.0
+	limit = float(configRegistry.get('ldap/replication/filesystem/limit', '10')) * 1024.0 * 1024.0
 	if free_space >= limit:
 		return
 
-	fqdn = '%(hostname)s.%(domainname)s' % listener.configRegistry
+	fqdn = '%(hostname)s.%(domainname)s' % configRegistry
 	ud.debug(ud.LISTENER, ud.ERROR, 'replication: Critical disk space. The Univention LDAP Listener was stopped')
 	msg = MIMEText(
 		'The Univention LDAP Listener process was stopped on %s.\n\n\n'
@@ -775,7 +774,7 @@ def check_file_system_space():
 		'systemctl restart univention-directory-listener' % (fqdn, LDAP_DIR, stat))
 	msg['Subject'] = 'Alert: Critical disk space on %s' % (fqdn,)
 	sender = 'root'
-	recipient = listener.configRegistry.get('ldap/replication/filesystem/recipient', sender)
+	recipient = configRegistry.get('ldap/replication/filesystem/recipient', sender)
 
 	msg['From'] = sender
 	msg['To'] = recipient
@@ -958,7 +957,7 @@ def handler(dn, new, listener_old, operation):
 		log_ldap(ud.ERROR, 'Constraint violation', ex, dn=dn)
 	except ldap.LDAPError as ex:
 		log_ldap(ud.ERROR, 'Error', ex, dn=dn)
-		if listener.configRegistry.get('ldap/replication/fallback', 'ldif') == 'restart':
+		if configRegistry.get('ldap/replication/fallback', 'ldif') == 'restart':
 			ud.debug(ud.LISTENER, ud.ERROR, 'replication: Uncaught LDAPError. Exiting Univention Directory Listener to retry replication with an updated copy of the current upstream object.')
 			sys.exit(1)  # retry a bit later after restart via runsv
 		else:

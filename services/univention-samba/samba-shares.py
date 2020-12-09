@@ -33,8 +33,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-from listener import SetUID, run
-import listener
+from listener import SetUID, configRegistry, run
 import os
 import re
 import subprocess
@@ -45,12 +44,10 @@ from six.moves import cPickle as pickle
 from six.moves.urllib_parse import quote
 
 # for the ucr commit below in postrun we need ucr configHandlers
-from univention.config_registry import configHandlers, ConfigRegistry
+from univention.config_registry import configHandlers
 from univention.config_registry.interfaces import Interfaces
 ucr_handlers = configHandlers()
 ucr_handlers.load()
-
-domainname = listener.baseConfig['domainname']
 
 name = 'samba-shares'
 description = 'Create configuration for Samba shares'
@@ -73,12 +70,11 @@ def _validate_smb_share_name(name):
 
 def handler(dn, new, old, command):
 	# type: (str, dict, dict, str) -> None
-	configRegistry = ConfigRegistry()
 	configRegistry.load()
 	interfaces = Interfaces(configRegistry)
 
 	# dymanic module object filter
-	current_fqdn = "%s.%s" % (configRegistry['hostname'], domainname)
+	current_fqdn = "%(hostname)s.%(domainname)s" % configRegistry
 	current_ip = str(interfaces.get_default_ip_address().ip)
 
 	new_univentionShareHost = new.get('univentionShareHost', [b''])[0].decode('ASCII')
@@ -165,7 +161,7 @@ def handler(dn, new, old, command):
 			if not old and oldObject and command == "a":
 				old = oldObject
 			with SetUID(0):
-				ret = univention.lib.listenerSharePath.createOrRename(old, new, listener.configRegistry)
+				ret = univention.lib.listenerSharePath.createOrRename(old, new, configRegistry)
 			if ret:
 				ud.debug(ud.LISTENER, ud.ERROR, "%s: rename/create of sharePath for %s failed (%s)" % (name, dn, ret))
 				return
@@ -213,10 +209,10 @@ def handler(dn, new, old, command):
 			]
 
 			vfs_objects = []
-			samba4_ntacl_backend = listener.configRegistry.get('samba4/ntacl/backend', 'native')
+			samba4_ntacl_backend = configRegistry.get('samba4/ntacl/backend', 'native')
 			if samba4_ntacl_backend == 'native':
 				vfs_objects.append('acl_xattr')
-				if listener.configRegistry.is_true('samba/vfs/acl_xattr/ignore_system_acls', False):
+				if configRegistry.is_true('samba/vfs/acl_xattr/ignore_system_acls', False):
 					print('acl_xattr:ignore system acls = yes')
 			elif samba4_ntacl_backend == 'tdb':
 				vfs_objects.append('acl_tdb')
@@ -262,7 +258,7 @@ def handler(dn, new, old, command):
 			fp.close()
 			os.rename('/etc/samba/shares.conf.temp', '/etc/samba/shares.conf')
 			if run_ucs_commit:
-				ucr_handlers.commit(listener.configRegistry, ['/etc/samba/smb.conf'])
+				ucr_handlers.commit(configRegistry, ['/etc/samba/smb.conf'])
 
 	if 'univentionShareSambaBaseDirAppendACL' in new or 'univentionShareSambaBaseDirAppendACL' in old:
 		with SetUID(0):
@@ -347,7 +343,7 @@ def clean():
 				os.unlink(os.path.join('/etc/samba/shares.conf.d', f))
 			if os.path.exists('/etc/samba/shares.conf'):
 				os.unlink('/etc/samba/shares.conf')
-				ucr_handlers.commit(listener.configRegistry, ['/etc/samba/smb.conf'])
+				ucr_handlers.commit(configRegistry, ['/etc/samba/smb.conf'])
 			os.rmdir('/etc/samba/shares.conf.d')
 
 

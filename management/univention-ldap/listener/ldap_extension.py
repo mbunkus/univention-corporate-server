@@ -32,8 +32,7 @@
 
 from __future__ import absolute_import
 
-from listener import SetUID
-import listener
+from listener import SetUID, configRegistry
 import univention.debug as ud
 import univention.lib.ldap_extension as ldap_extension
 import os
@@ -44,8 +43,8 @@ description = 'Configure LDAP schema and ACL extensions'
 filter = '(|(objectClass=univentionLDAPExtensionSchema)(objectClass=univentionLDAPExtensionACL))'
 attributes = []
 
-schema_handler = ldap_extension.UniventionLDAPSchema(listener.configRegistry)
-acl_handler = ldap_extension.UniventionLDAPACL(listener.configRegistry)
+schema_handler = ldap_extension.UniventionLDAPSchema(configRegistry)
+acl_handler = ldap_extension.UniventionLDAPACL(configRegistry)
 
 
 def handler(dn, new, old):
@@ -71,7 +70,7 @@ def postrun():
 	"""Restart LDAP server Primary and mark new extension objects active"""
 	global schema_handler, acl_handler
 
-	server_role = listener.configRegistry.get('server/role')
+	server_role = configRegistry.get('server/role')
 	if not server_role == 'domaincontroller_master':
 		if not acl_handler._todo_list:
 			# In case of schema changes only restart slapd on Primary

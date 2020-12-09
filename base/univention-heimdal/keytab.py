@@ -32,8 +32,7 @@
 
 from __future__ import absolute_import
 
-from listener import SetUID
-import listener
+from listener import configRegistry, SetUID
 import os
 import time
 from subprocess import call
@@ -41,13 +40,13 @@ from subprocess import call
 import ldap.dn
 import univention.debug as ud
 
-hostname = listener.configRegistry['hostname']
-domainname = listener.configRegistry['domainname']
-base_domain = '.'.join(x[0][1] for x in ldap.dn.str2dn(listener.configRegistry['ldap/base']))
-realm = listener.configRegistry['kerberos/realm']
-server_role = listener.configRegistry['server/role']
-ldap_master = listener.configRegistry['ldap/master']
-samba4_role = listener.configRegistry.get('samba4/role', '')
+hostname = configRegistry['hostname']
+domainname = configRegistry['domainname']
+base_domain = '.'.join(x[0][1] for x in ldap.dn.str2dn(configRegistry['ldap/base']))
+realm = configRegistry['kerberos/realm']
+server_role = configRegistry['server/role']
+ldap_master = configRegistry['ldap/master']
+samba4_role = configRegistry.get('samba4/role', '')
 
 
 name = 'keytab'

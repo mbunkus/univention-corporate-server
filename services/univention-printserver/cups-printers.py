@@ -32,8 +32,7 @@
 
 from __future__ import absolute_import
 
-from listener import SetUID, run
-import listener
+from listener import SetUID, configRegistry, run
 import os
 import time
 import pipes
@@ -47,12 +46,11 @@ from ldap.dn import str2dn
 
 ucr_handlers = configHandlers()
 ucr_handlers.load()
-interfaces = Interfaces(listener.configRegistry)
+interfaces = Interfaces(configRegistry)
 
-hostname = listener.configRegistry['hostname']
-domainname = listener.configRegistry['domainname']
+fqdn = ('%(hostname)s.%(domainname)s' % configRegistry).lower()
 ip = str(interfaces.get_default_ip_address().ip)
-ldap_base = listener.configRegistry['ldap/base']
+ldap_base = configRegistry['ldap/base']
 
 name = 'cups-printers'
 description = 'Manage CUPS printer configuration'
@@ -119,7 +117,6 @@ def lpadmin(args):
 
 def filter_match(object):
 	# type: (dict) -> bool
-	fqdn = ('%s.%s' % (hostname, domainname)).lower()
 	for host in object.get('univentionPrinterSpoolHost', ()):
 		if host.decode('ASCII').lower() in (ip.lower(), fqdn):
 			return True
@@ -149,7 +146,7 @@ def handler(dn, new, old):
 	need_to_reload_samba = False
 	need_to_reload_cups = False
 	printer_is_group = False
-	samba_force_printername = listener.configRegistry.is_true('samba/force_printername', True)
+	samba_force_printername = configRegistry.is_true('samba/force_printername', True)
 	global reload_samba_in_postrun
 	reload_samba_in_postrun = True
 
@@ -198,10 +195,10 @@ def handler(dn, new, old):
 		if 'cn' in changes or not filter_match(new):
 			# Deletions done via UCR-Variables
 			printer_name = old['cn'][0].decode('UTF-8')
-			listener.configRegistry.load()
-			printer_list = listener.configRegistry.get('cups/restrictedprinters', '').split()
+			configRegistry.load()
+			printer_list = configRegistry.get('cups/restrictedprinters', '').split()
 			printer_is_restricted = printer_name in printer_list
-			if printer_is_restricted and not listener.configRegistry.is_false('cups/automaticrestrict', False):
+			if printer_is_restricted and not configRegistry.is_false('cups/automaticrestrict', False):
 				printer_list.remove(printer_name)
 				keyval = 'cups/restrictedprinters=%s' % ' '.join(printer_list)
 				with SetUID(0):
@@ -226,8 +223,8 @@ def handler(dn, new, old):
 	if filter_match(new):
 		# Modifications done via UCR-Variables
 		printer_name = new['cn'][0].decode('UTF-8')
-		listener.configRegistry.load()
-		printer_list = listener.configRegistry.get('cups/restrictedprinters', '').split()
+		configRegistry.load()
+		printer_list = configRegistry.get('cups/restrictedprinters', '').split()
 		printer_is_restricted = printer_name in printer_list
 		restrict_printer = (new.get('univentionPrinterACLUsers', []) or new.get('univentionPrinterACLGroups', [])) and new['univentionPrinterACLtype'][0] != b'allow all'
 
@@ -239,7 +236,7 @@ def handler(dn, new, old):
 			printer_list.append(printer_name)
 			update_restricted_printers = True
 
-		if update_restricted_printers and not listener.configRegistry.is_false('cups/automaticrestrict', False):
+		if update_restricted_printers and not configRegistry.is_false('cups/automaticrestrict', False):
 			keyval = 'cups/restrictedprinters=%s' % ' '.join(printer_list)
 			with SetUID(0):
 				univention.config_registry.handler_set([keyval])
@@ -392,7 +389,7 @@ def reload_smbd():
 	# type: () -> None
 	global reload_samba_in_postrun
 	with SetUID(0):
-		ucr_handlers.commit(listener.configRegistry, ['/etc/samba/smb.conf'])
+		ucr_handlers.commit(configRegistry, ['/etc/samba/smb.conf'])
 		if os.path.exists('/etc/init.d/samba'):
 			subprocess.call(('/etc/init.d/samba', 'reload'))
 		elif os.path.exists('/usr/bin/pkill'):
@@ -419,7 +416,7 @@ def clean():
 				os.unlink(os.path.join('/etc/samba/printers.conf.d', f))
 		if os.path.exists('/etc/samba/printers.conf'):
 			os.unlink('/etc/samba/printers.conf')
-			ucr_handlers.commit(listener.configRegistry, ['/etc/samba/smb.conf'])
+			ucr_handlers.commit(configRegistry, ['/etc/samba/smb.conf'])
 		os.rmdir('/etc/samba/printers.conf.d')
 
 

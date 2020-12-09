@@ -32,11 +32,10 @@
 
 from __future__ import absolute_import
 
-from listener import SetUID
-import listener
+from listener import SetUID, configRegistry as ucr
 import subprocess
 
-from univention.config_registry import ConfigRegistry, handler_set
+from univention.config_registry import handler_set
 
 name = 'univention-admin-diary-backend'
 description = 'Manage admin/diary/backend variable'
@@ -57,7 +56,6 @@ def handler(dn, new, old):
 			except (KeyError, IndexError):
 				return
 
-			ucr = ConfigRegistry()
 			ucr.load()
 			old_ucr_value = ucr.get('admin/diary/backend', u'')
 			fqdn_set = set(old_ucr_value.split())
@@ -71,7 +69,6 @@ def handler(dn, new, old):
 			except (KeyError, IndexError):
 				return
 
-			ucr = ConfigRegistry()
 			ucr.load()
 			old_ucr_value = ucr.get('admin/diary/backend', u'')
 			fqdn_set = set(old_ucr_value.split())

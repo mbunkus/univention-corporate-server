@@ -32,8 +32,7 @@
 
 from __future__ import absolute_import
 
-from listener import SetUID
-import listener
+from listener import SetUID, configRegistry
 import univention.config_registry
 import re
 import univention.debug
@@ -46,7 +45,6 @@ attributes = []
 
 def handler(dn, new, old):
 	# type: (str, dict, dict) -> None
-	configRegistry = univention.config_registry.ConfigRegistry()
 	configRegistry.load()
 
 	old_hosteddomains = set(re.split('[ ]+', configRegistry.get('mail/hosteddomains', '')))

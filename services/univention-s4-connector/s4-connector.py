@@ -34,8 +34,7 @@
 from __future__ import absolute_import
 
 from six.moves import cPickle as pickle
-from listener import SetUID
-import listener
+from listener import SetUID, configRegistry
 import os
 import time
 import shutil
@@ -60,11 +59,11 @@ s4_init_mode = False
 group_objects = []
 connector_needs_restart = False
 
-dirs = [listener.configRegistry.get('connector/s4/listener/dir', '/var/lib/univention-connector/s4')]
-if 'connector/listener/additionalbasenames' in listener.configRegistry and listener.configRegistry['connector/listener/additionalbasenames']:
-	for configbasename in listener.configRegistry['connector/listener/additionalbasenames'].split(' '):
-		if '%s/s4/listener/dir' % configbasename in listener.configRegistry and listener.configRegistry['%s/s4/listener/dir' % configbasename]:
-			dirs.append(listener.configRegistry['%s/s4/listener/dir' % configbasename])
+dirs = [configRegistry.get('connector/s4/listener/dir', '/var/lib/univention-connector/s4')]
+if 'connector/listener/additionalbasenames' in configRegistry and configRegistry['connector/listener/additionalbasenames']:
+	for configbasename in configRegistry['connector/listener/additionalbasenames'].split(' '):
+		if '%s/s4/listener/dir' % configbasename in configRegistry and configRegistry['%s/s4/listener/dir' % configbasename]:
+			dirs.append(configRegistry['%s/s4/listener/dir' % configbasename])
 		else:
 			ud.debug(ud.LISTENER, ud.WARN, "s4-connector: additional config basename %s given, but %s/s4/listener/dir not set; ignore basename." % (configbasename, configbasename))
 
@@ -110,7 +109,7 @@ def _dump_changes_to_file_and_check_file(directory, dn, new, old, old_dn):
 
 def _is_module_disabled():
 	# type: () -> bool
-	return listener.baseConfig.is_true('connector/s4/listener/disabled', False)
+	return configRegistry.is_true('connector/s4/listener/disabled', False)
 
 
 @SetUID(0)

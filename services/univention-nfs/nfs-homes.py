@@ -32,15 +32,13 @@
 
 from __future__ import absolute_import
 
-import listener
+from listener import SetUID, configRegistry
 import univention.debug as ud
 
 import os
 import stat
 
-hostname = listener.configRegistry["hostname"]
-domainname = listener.configRegistry["domainname"]
-fqdn = "%s.%s" % (hostname, domainname)
+fqdn = "%(hostname)s.%(domainname)s" % configRegistry
 
 name = "nfs-homes"
 description = "Create user home dirs on nfs share host"
@@ -50,7 +48,7 @@ attributes = ["uid", "automountInformation", "gidNumber", "uidNumber"]
 
 def handler(dn, new, old):
 	# type: (str, dict, dict) -> None
-	if not listener.configRegistry.is_true("nfs/create/homesharepath"):
+	if not configRegistry.is_true("nfs/create/homesharepath"):
 		return
 
 	# new and modify

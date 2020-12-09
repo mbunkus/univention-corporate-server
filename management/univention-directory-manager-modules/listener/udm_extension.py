@@ -38,8 +38,7 @@ import subprocess
 
 import apt
 
-from listener import SetUID
-import listener
+from listener import SetUID, configRegistry
 
 import univention.debug as ud
 import univention.admin.uldap as udm_uldap
@@ -102,7 +101,7 @@ def handler(dn, new, old):
 
 	# Bug #51622 for UCS 5.0 update:
 	if new and not old:
-		if listener.configRegistry.get('server/role') == 'domaincontroller_master':
+		if configRegistry.get('server/role') == 'domaincontroller_master':
 			# Remove objects that don't signal Python3 support
 			cmp_start_vs_50 = apt.apt_pkg.version_compare(univentionUCSVersionStart, "5.0")  # -1 if univentionUCSVersionStart is unset
 			# cmp_end_vs_499 = apt.apt_pkg.version_compare(univentionUCSVersionEnd, "4.99")
@@ -114,7 +113,7 @@ def handler(dn, new, old):
 				return
 
 	if new:
-		current_UCS_version = "%s-%s" % (listener.configRegistry.get('version/version'), listener.configRegistry.get('version/patchlevel'))
+		current_UCS_version = "%(version/version)s-%(version/patchlevel)s" % configRegistry
 		if univentionUCSVersionStart and UCS_Version(current_UCS_version) < UCS_Version(univentionUCSVersionStart):
 			ud.debug(ud.LISTENER, ud.INFO, '%s: extension %s requires at least UCS version %s.' % (name, new['cn'][0].decode('UTF-8'), univentionUCSVersionStart))
 			# Trigger remove on this system
@@ -188,7 +187,7 @@ def handler(dn, new, old):
 	# Mark new extension object active
 	with SetUID(0):
 		if new:
-			if not listener.configRegistry.get('server/role') == 'domaincontroller_master':
+			if not configRegistry.get('server/role') == 'domaincontroller_master':
 				# Only set active flag on Primary
 				return
 

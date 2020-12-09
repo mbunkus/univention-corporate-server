@@ -29,12 +29,9 @@
 from __future__ import absolute_import
 import string
 import inspect
-import listener
+from listener import configRegistry
 from univention.listener.handler_logging import get_logger
 from univention.listener.exceptions import ListenerModuleConfigurationError
-
-
-listener.configRegistry.load()
 
 
 class ListenerModuleConfiguration(object):
@@ -191,4 +188,4 @@ class ListenerModuleConfiguration(object):
 		:return: whether the listener module should be activated
 		:rtype: bool
 		"""
-		return not listener.configRegistry.is_true('listener/module/{}/deactivate'.format(self.get_name()), False)
+		return not configRegistry.is_true('listener/module/{}/deactivate'.format(self.get_name()), False)

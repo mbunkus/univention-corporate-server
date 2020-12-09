@@ -33,9 +33,7 @@
 
 from __future__ import absolute_import
 
-from listener import run
-import listener
-import univention.config_registry
+from listener import configRegistry as ucr, run
 
 name = 'nss'
 description = 'Invalidate the nss group cache whenever a group membership has been modified.'
@@ -50,7 +48,6 @@ def handler(dn, new, old):
 
 def postrun():
 	# type: () -> None
-	ucr = univention.config_registry.ConfigRegistry()  # TODO: why not listener.configRegistry?
 	ucr.load()
 
 	if ucr.is_true('nss/group/cachefile', False) and ucr.is_true('nss/group/cachefile/invalidate_on_changes', True):

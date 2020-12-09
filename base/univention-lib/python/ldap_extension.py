@@ -51,8 +51,7 @@ from abc import ABCMeta, abstractproperty, abstractmethod
 
 import six
 import apt
-from listener import SetUID
-import listener
+from listener import configRegistry, SetUID
 from ldap.filter import filter_format
 from ldap.dn import escape_dn_chars
 
@@ -84,7 +83,7 @@ def safe_path_join(basedir, filename):
 
 
 def _verify_handler_message_container(lo, position):
-	position_dn = 'cn=univention,{}'.format(listener.configRegistry.get('ldap/base'))
+	position_dn = 'cn=univention,{}'.format(configRegistry.get('ldap/base'))
 	udm_modules.update()
 	cn_module = udm_modules.get('container/cn')
 	udm_modules.init(lo, position, cn_module)
@@ -99,7 +98,7 @@ def _verify_handler_message_container(lo, position):
 
 
 def _get_handler_message_object(lo, position, handler_name, create=False):
-	position_dn = 'cn=handler_messages,cn=univention,{}'.format(listener.configRegistry.get('ldap/base'))
+	position_dn = 'cn=handler_messages,cn=univention,{}'.format(configRegistry.get('ldap/base'))
 	udm_modules.update()
 	data_module = udm_modules.get('settings/data')
 	udm_modules.init(lo, position, data_module)
@@ -120,7 +119,7 @@ def _get_handler_message_object(lo, position, handler_name, create=False):
 def set_handler_message(name, dn, msg):
 	# type: (str, str, str) -> None
 	# currently only on Primary Directory Node
-	if listener.configRegistry.get('server/role') in ('domaincontroller_master',):
+	if configRegistry.get('server/role') in ('domaincontroller_master',):
 		ud.debug(ud.LISTENER, ud.INFO, 'set_handler_message for {}'.format(name))
 		setuid = False if os.geteuid() == 0 else True
 		if setuid:
@@ -134,7 +133,7 @@ def set_handler_message(name, dn, msg):
 				data = json.loads(bz2.decompress(base64.b64decode(data_obj.get('data', ''))))
 			except ValueError:
 				pass
-			hostname = listener.configRegistry.get('hostname')
+			hostname = configRegistry.get('hostname')
 			if not data.get(hostname):
 				data[hostname] = dict()
 			data[hostname][dn] = msg
@@ -153,11 +152,11 @@ def get_handler_message(name, binddn, bindpw):
 	msg = dict()
 	try:
 		lo = udm_uldap.access(
-			host=listener.configRegistry.get('ldap/master'),
-			base=listener.configRegistry.get('ldap/base'),
+			host=configRegistry.get('ldap/master'),
+			base=configRegistry.get('ldap/base'),
 			binddn=binddn, bindpw=bindpw)
 		position = udm_uldap.position(lo.base)
-		position_dn = 'cn=handler_messages,cn=univention,{}'.format(listener.configRegistry.get('ldap/base'))
+		position_dn = 'cn=handler_messages,cn=univention,{}'.format(configRegistry.get('ldap/base'))
 		udm_modules.update()
 		data_module = udm_modules.get('settings/data')
 		udm_modules.init(lo, position, data_module)
@@ -555,7 +554,7 @@ class UniventionLDAPSchema(UniventionLDAPExtensionWithListenerHandler):
 	def _handler(self, dn, new, old, name=None):
 		# type: (str, Optional[Dict[str, List[bytes]]], Optional[Dict[str, List[bytes]]], str) -> None
 		"""Handle LDAP schema extensions on Primary and Backup Directory Nodes"""
-		if not listener.configRegistry.get('server/role') in ('domaincontroller_master', 'domaincontroller_backup'):
+		if not configRegistry.get('server/role') in ('domaincontroller_master', 'domaincontroller_backup'):
 			return
 
 		if new:  # create / modify
@@ -741,10 +740,10 @@ class UniventionLDAPACL(UniventionLDAPExtensionWithListenerHandler):
 		# type: (str, Optional[Dict[str, List[bytes]]], Optional[Dict[str, List[bytes]]], str) -> None
 		"""Handle LDAP ACL extensions on Primary, Backup and Replica Directory Nodes"""
 
-		if not listener.configRegistry.get('ldap/server/type'):
+		if not configRegistry.get('ldap/server/type'):
 			return
 
-		if not listener.configRegistry.get('server/role') in ('domaincontroller_master',):
+		if not configRegistry.get('server/role') in ('domaincontroller_master',):
 			# new, ignore first *inactive* appearance, has to be activated on Primary Directory Node first
 			if new and not old and new.get('univentionLDAPACLActive', [b'FALSE'])[0] != b'TRUE':
 				ud.debug(ud.LISTENER, ud.PROCESS, '%s: ignore first appearance of %s, not yet activated' % (name, dn))
@@ -759,7 +758,7 @@ class UniventionLDAPACL(UniventionLDAPExtensionWithListenerHandler):
 		if new:
 			univentionUCSVersionStart = new.get('univentionUCSVersionStart', [b''])[0].decode('UTF-8')
 			univentionUCSVersionEnd = new.get('univentionUCSVersionEnd', [b''])[0].decode('UTF-8')
-			current_UCS_version = "%s-%s" % (listener.configRegistry.get('version/version'), listener.configRegistry.get('version/patchlevel'))
+			current_UCS_version = "%(version/version)s-%(version/patchlevel)s" % configRegistry
 			if univentionUCSVersionStart and UCS_Version(current_UCS_version) < UCS_Version(univentionUCSVersionStart):
 				ud.debug(ud.LISTENER, ud.INFO, '%s: extension %s requires at least UCR version %s.' % (name, new['cn'][0].decode('UTF-8'), univentionUCSVersionStart))
 				old = old or new
@@ -784,7 +783,7 @@ class UniventionLDAPACL(UniventionLDAPExtensionWithListenerHandler):
 				diff_keys = [key for key in new.keys() if new.get(key) != old.get(key) and key not in ('entryCSN', 'modifyTimestamp', 'modifiersName')]
 				if diff_keys == ['univentionLDAPACLActive'] and new['univentionLDAPACLActive'][0] == b'TRUE':
 					# ignore status change on Primary Directory Node, already activated
-					if listener.configRegistry.get('server/role') in ('domaincontroller_master',):
+					if configRegistry.get('server/role') in ('domaincontroller_master',):
 						ud.debug(ud.LISTENER, ud.INFO, '%s: extension %s: activation status changed.' % (name, new['cn'][0].decode('UTF-8')))
 						return
 				elif diff_keys == ['univentionAppIdentifier']:

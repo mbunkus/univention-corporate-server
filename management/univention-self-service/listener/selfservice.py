@@ -32,8 +32,7 @@
 
 from __future__ import absolute_import
 
-from listener import SetUID
-import listener
+from listener import SetUID, configRegistry as ucr
 import univention.config_registry
 
 name = 'selfservice'
@@ -47,7 +46,6 @@ UCRV = 'umc/self-service/passwordreset/email/webserver_address'
 def handler(dn, new, old):
 	# type: (str, dict, dict) -> None
 	if new:
-		ucr = univention.config_registry.ConfigRegistry()
 		ucr.load()
 		if not ucr.get(UCRV):
 			fqdn = '%s.%s' % (new['cn'][0].decode('UTF-8'), new.get('associatedDomain')[0].decode('ASCII'))

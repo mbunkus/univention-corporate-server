@@ -32,8 +32,7 @@
 
 from __future__ import absolute_import
 
-from listener import SetUID
-import listener
+from listener import SetUID, configRegistry as ucr
 import univention.config_registry
 
 import univention.debug as ud
@@ -47,7 +46,6 @@ attributes = []
 def handler(dn, new, old):
 	# type: (str, dict, dict) -> None
 	"""Handle change in LDAP."""
-	ucr = univention.config_registry.ConfigRegistry()
 	ucr.load()
 
 	if ucr['server/role'] == 'domaincontroller_master':

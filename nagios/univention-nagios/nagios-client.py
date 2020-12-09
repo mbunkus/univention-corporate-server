@@ -32,8 +32,7 @@
 
 from __future__ import absolute_import
 
-from listener import SetUID, run
-import listener
+from listener import SetUID, configRegistry, run
 import os
 import re
 import stat
@@ -134,7 +133,7 @@ def handler(dn, new, old):
 	# univention.debug.debug(univention.debug.LISTENER, univention.debug.INFO, 'NAGIOS-CLIENT: IN old=%r' % (old,))
 	# univention.debug.debug(univention.debug.LISTENER, univention.debug.INFO, 'NAGIOS-CLIENT: IN new=%r' % (new,))
 
-	fqdn = '%s.%s' % (listener.baseConfig['hostname'], listener.baseConfig['domainname'])
+	fqdn = '%(hostname)s.%(username)s' % configRegistry
 	fqdn = fqdn.encode('UTF-8')
 
 	if old and not new:
@@ -204,6 +203,6 @@ def postrun():
 	# type: () -> None
 	global __initscript
 	initscript = __initscript
-	if listener.configRegistry.is_true("nagios/client/autostart"):
+	if configRegistry.is_true("nagios/client/autostart"):
 		univention.debug.debug(univention.debug.LISTENER, univention.debug.INFO, 'NRPED: Restarting server')
 		run(initscript, ['nagios-nrpe-server', 'restart'], uid=0)

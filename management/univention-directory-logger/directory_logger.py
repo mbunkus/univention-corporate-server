@@ -32,8 +32,7 @@
 
 from __future__ import absolute_import
 
-from listener import SetUID
-import listener
+from listener import SetUID, configRegistry
 import time
 import syslog
 import re
@@ -66,7 +65,7 @@ preferedGroup = "adm"
 gidNumber = 0  # fallback
 filemode = '0640'
 cleanupDellog = True  # remove missed dellog entries (after reporting about them)
-digest = listener.configRegistry.get('ldap/logging/hash', 'md5')
+digest = configRegistry.get('ldap/logging/hash', 'md5')
 
 SAFE_STRING_RE = re.compile(r'^(?:\000|\n|\r| |:|<)|[\000\n\r\200-\377]+|[ ]+$')
 
@@ -113,7 +112,7 @@ def filterOutUnchangedAttributes(old_copy, new_copy):
 
 
 def process_dellog(dn):
-	dellog = listener.configRegistry['ldap/logging/dellogdir']
+	dellog = configRegistry['ldap/logging/dellogdir']
 
 	dellist = sorted(os.listdir(dellog))
 	for filename in dellist:
@@ -140,21 +139,21 @@ def process_dellog(dn):
 
 
 def prefix_record(record, identifier):
-	if not listener.configRegistry.is_true('ldap/logging/id-prefix', False):
+	if not configRegistry.is_true('ldap/logging/id-prefix', False):
 		return record
 	return '\n'.join('ID %s: %s' % (identifier, line) for line in record.splitlines()) + '\n'
 
 
 def handler(dn, new_copy, old_copy):
 	# type: (str, dict, dict) -> None
-	if not listener.configRegistry.is_true('ldap/logging'):
+	if not configRegistry.is_true('ldap/logging'):
 		return
 
 	with SetUID(0):
 		# check for exclusion
 		if any(
 			value in dn
-			for key, value in listener.configRegistry.items()
+			for key, value in configRegistry.items()
 			if excludeKeyPattern.match(key)
 		):
 			if not new_copy:  # there should be a dellog entry to remove

@@ -32,8 +32,7 @@
 
 from __future__ import absolute_import
 
-from listener import SetUID, run
-import listener
+from listener import SetUID, configRegistry, run
 import os
 import re
 from six.moves import cPickle as pickle
@@ -42,9 +41,9 @@ import univention.debug as ud
 import univention.lib.listenerSharePath
 from univention.config_registry.interfaces import Interfaces
 
-hostname = listener.configRegistry['hostname']
-domainname = listener.configRegistry['domainname']
-interfaces = Interfaces(listener.configRegistry)
+hostname = configRegistry['hostname']
+domainname = configRegistry['domainname']
+interfaces = Interfaces(configRegistry)
 ip = interfaces.get_default_ip_address().ip
 
 name = 'nfs-shares'
@@ -123,7 +122,7 @@ def handler(dn, new, old, command):
 			# object was renamed
 			if not old and oldObject and command == "a":
 				old = oldObject
-			ret = univention.lib.listenerSharePath.createOrRename(old, new, listener.configRegistry)
+			ret = univention.lib.listenerSharePath.createOrRename(old, new, configRegistry)
 			if ret:
 				ud.debug(ud.LISTENER, ud.ERROR, "%s: rename/create of sharePath for %s failed (%s)" % (name, dn, ret))
 	else:

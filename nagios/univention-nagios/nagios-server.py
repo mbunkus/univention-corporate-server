@@ -32,7 +32,7 @@
 
 from __future__ import absolute_import
 
-from listener import SetUID, run
+from listener import SetUID, configRegistry, run
 import listener
 import os
 import re
@@ -497,7 +497,7 @@ def handleHost(dn, new, old):
 	oldfqdn = 'unknown'
 	newfqdn = 'unknown'
 
-	olddomain = listener.configRegistry['domainname']
+	olddomain = configRegistry['domainname']
 	if old and 'associatedDomain' in old and old['associatedDomain']:
 		olddomain = old['associatedDomain'][0].decode('ASCII')
 	if old:
@@ -510,7 +510,7 @@ def handleHost(dn, new, old):
 			oldfqdn = host + '.unknown'
 	old_host_filename = os.path.join(__hostsdir, '%s.cfg' % oldfqdn)
 
-	newdomain = listener.configRegistry['domainname']
+	newdomain = configRegistry['domainname']
 	if new and 'associatedDomain' in new and new['associatedDomain']:
 		newdomain = new['associatedDomain'][0].decode('ASCII')
 	if new:
@@ -527,7 +527,7 @@ def handleHost(dn, new, old):
 	# default: AllHosts
 	# if host object resides within ou or container then parts of ou/container's dn is used as groupname
 	grpname = 'AllHosts'
-	ldapbase = listener.configRegistry['ldap/base']
+	ldapbase = configRegistry['ldap/base']
 	result = re.search('^cn=%s(,.*?)?,%s$' % (host, ldapbase), dn)
 	if result and result.group(1):
 		grpname = re.sub(r',\w+=', '_', result.group(1))[1:]
@@ -588,15 +588,15 @@ def handleHost(dn, new, old):
 			if 'univentionNagiosParent' in new and new['univentionNagiosParent']:
 				fp.write('    parents                 %s\n' % b', '.join(new['univentionNagiosParent']).decode('UTF-8'))
 
-			if listener.configRegistry.is_true("nagios/server/hostcheck/enable", False):
+			if configRegistry.is_true("nagios/server/hostcheck/enable", False):
 				fp.write('    check_command           check-host-alive\n')
 
 			fp.write('    max_check_attempts      10\n')
 			fp.write('    contact_groups          cg-%s\n' % newfqdn)
 
 			notification_interval = 0
-			if "nagios/server/hostcheck/notificationinterval" in listener.configRegistry and listener.configRegistry["nagios/server/hostcheck/notificationinterval"]:
-				notification_interval = listener.configRegistry["nagios/server/hostcheck/notificationinterval"]
+			if "nagios/server/hostcheck/notificationinterval" in configRegistry and configRegistry["nagios/server/hostcheck/notificationinterval"]:
+				notification_interval = configRegistry["nagios/server/hostcheck/notificationinterval"]
 
 			fp.write('    notification_interval   %s\n' % notification_interval)
 			fp.write('    notification_period     %s\n' % __predefinedTimeperiod)
@@ -694,7 +694,7 @@ def postrun():
 		listener.unsetuid()
 		if not pidlist.strip():
 			if retcode == 0:
-				if listener.configRegistry.is_true("nagios/server/autostart", False):
+				if configRegistry.is_true("nagios/server/autostart", False):
 					ud.debug(ud.LISTENER, ud.INFO, 'NAGIOS-SERVER: nagios not running - restarting server')
 
 					run(initscript, ['nagios', 'restart'], uid=0)

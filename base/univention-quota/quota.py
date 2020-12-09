@@ -46,8 +46,7 @@ import univention.debug as ud
 import univention.lib.policy_result
 import univention.uldap
 
-from listener import SetUID
-import listener
+from listener import SetUID, configRegistry
 
 name = 'quota'
 description = 'Dump quota settings into a cache directory'
@@ -162,7 +161,7 @@ def _is_container_change_relevant(new, old):
 
 def _get_fqdn():
 	# type: () -> str
-	return '%s.%s' % (listener.configRegistry['hostname'], listener.configRegistry['domainname'])
+	return '%(hostname)s.%(domainname)s' % configRegistry
 
 
 def _is_share_used_on_this_server(new, old):

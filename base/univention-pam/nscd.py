@@ -33,9 +33,7 @@
 
 from __future__ import absolute_import
 
-from listener import run
-import listener
-from univention.config_registry import ConfigRegistry
+from listener import configRegistry, run
 import univention.debug as ud
 
 name = 'nscd_update'
@@ -51,7 +49,6 @@ def handler(dn, new, old):
 
 def postrun():
 	# type: () -> None
-	configRegistry = ConfigRegistry()  # TODO: why not listener.configRegistry?
 	configRegistry.load()
 
 	if configRegistry.is_true('nscd/group/invalidate_cache_on_changes', False) and configRegistry.is_false('nss/group/cachefile', True):

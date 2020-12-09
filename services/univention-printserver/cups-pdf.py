@@ -32,8 +32,7 @@
 
 from __future__ import absolute_import
 
-from listener import SetUID
-import listener
+from listener import SetUID, configRegistry
 import univention.debug as ud
 import univention.config_registry
 
@@ -42,6 +41,8 @@ description = 'Manage Samba share for CUPS pdf printer'
 filter = '(objectClass=univentionShareSamba)'
 attributes = ['cn', 'univentionSharePath']
 sharename = "pdfPrinterShare"
+
+fqhn = '%(hostname)s.%(domainname)s' % configRegistry
 
 # set two ucr variables (template cups-pdf) if the share for
 # the pdf pseudo printer is changed
@@ -53,9 +54,8 @@ def handler(dn, new, old):
 		if new.get('univentionSharePath') and new.get('univentionShareHost'):
 			path = new['univentionSharePath'][0].decode('UTF-8')
 			server = new['univentionShareHost'][0].decode('ASCII')
-			me = listener.configRegistry.get('hostname') + "." + listener.configRegistry.get('domainname')
 
-			if me == server:
+			if fqhn == server:
 				ud.debug(ud.LISTENER, ud.INFO, "cups-pdf: setting cups-pdf path to %s according to sharepath in %s on %s" % (path, sharename, server))
 				list_ = []
 				list_.append('cups/cups-pdf/directory=%s' % (path,))

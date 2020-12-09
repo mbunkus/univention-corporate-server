@@ -31,7 +31,7 @@
 
 from __future__ import absolute_import
 
-import listener
+from listener import configRegistry
 import univention.debug as ud
 import os
 
@@ -45,10 +45,10 @@ cache_dir = '/var/cache/univention-directory-listener/selfservice-invitation'
 
 def handler(dn, new, old, command):
 	# type: (str, dict, dict, str) -> None
-	if not listener.configRegistry.is_true('umc/self-service/invitation/enabled', True):
+	if not configRegistry.is_true('umc/self-service/invitation/enabled', True):
 		return
 
-	if not listener.configRegistry.get('server/role', 'undefined') == 'domaincontroller_master':
+	if not configRegistry.get('server/role', 'undefined') == 'domaincontroller_master':
 		return
 
 	if new and not old and command == 'a':
