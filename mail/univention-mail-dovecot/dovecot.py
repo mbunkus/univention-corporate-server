@@ -126,7 +126,7 @@ def handler(dn, new, old, command):
 		old = load_old(old)
 
 	listener.configRegistry.load()
-	dl = DovecotUserListener(listener, name)
+	dl = DovecotUserListener(name)
 	oldMailPrimaryAddress = old.get('mailPrimaryAddress', [b""])[0].decode('UTF-8').lower()
 	newMailPrimaryAddress = new.get('mailPrimaryAddress', [b""])[0].decode('UTF-8').lower()
 	oldHomeServer = old.get('univentionMailHomeServer', [b''])[0].decode('UTF-8').lower()

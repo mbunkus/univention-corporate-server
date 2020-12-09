@@ -133,7 +133,7 @@ def handler(dn, new, old):
 	domainname = domainname.lower()
 
 	listener.configRegistry.load()
-	dl = DovecotSharedFolderListener(listener, name)
+	dl = DovecotSharedFolderListener(name)
 
 	#
 	# Create a new shared folder
