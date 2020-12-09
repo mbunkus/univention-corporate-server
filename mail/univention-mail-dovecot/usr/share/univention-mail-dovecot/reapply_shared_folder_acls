@@ -72,10 +72,7 @@ Reapplies the ACLs to all shared IMAP folder on this system.'''
 	ucr = ConfigRegistry()
 	ucr.load()
 
-	ldapfilter = '(&(objectClass=univentionMailSharedFolder)(univentionMailHomeServer=%s.%s))' % (
-		ucr.get('hostname'),
-		ucr.get('domainname'),
-	)
+	ldapfilter = '(&(objectClass=univentionMailSharedFolder)(univentionMailHomeServer=%(hostname)s.%(domainname)s))' % ucr
 
 	log(ud.INFO, 'Initialising reapply_shared_folder_acls...')
 	lm = ListenerMockup(ucr)

@@ -169,8 +169,7 @@ def handler(dn, new, old):
 			zonename = new['zoneName'][0].decode('UTF-8')
 			zonename = validate_zonename(zonename)
 			zonefile = safe_path_join(PROXY_CACHE_DIR, "%s.zone" % (zonename,))
-			proxy_cache = open(zonefile, 'w')
-			proxy_cache.close()
+			open(zonefile, 'w').close()
 			os.chmod(zonefile, 0o640)
 			chgrp_bind(zonefile)
 	except InvalidZone as exc:
@@ -199,8 +198,7 @@ def _new_zone(ucr, zonename, dn):
 	zonefile = safe_path_join(NAMED_CONF_DIR, zonename)
 
 	# Create empty file and restrict permission
-	named_zone = open(zonefile, 'w')
-	named_zone.close()
+	open(zonefile, 'w').close()
 	os.chmod(zonefile, 0o640)
 	chgrp_bind(zonefile)
 

@@ -57,8 +57,9 @@ def handler(dn, new, old):
 
 			if fqhn == server:
 				ud.debug(ud.LISTENER, ud.INFO, "cups-pdf: setting cups-pdf path to %s according to sharepath in %s on %s" % (path, sharename, server))
-				list_ = []
-				list_.append('cups/cups-pdf/directory=%s' % (path,))
-				list_.append('cups/cups-pdf/anonymous=%s' % (path,))
+				list_ = [
+					'cups/cups-pdf/directory=%s' % (path,),
+					'cups/cups-pdf/anonymous=%s' % (path,),
+				]
 				with SetUID(0):
 					univention.config_registry.handler_set(list_)

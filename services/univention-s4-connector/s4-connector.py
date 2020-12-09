@@ -134,7 +134,7 @@ def handler(dn, new, old, command):
 	if b'univentionUDMProperty' in new.get('objectClass', []) or b'univentionUDMProperty' in old.get('objectClass', []):
 		connector_needs_restart = True
 	else:
-		if connector_needs_restart is True:
+		if connector_needs_restart:
 			_restart_connector()
 			connector_needs_restart = False
 

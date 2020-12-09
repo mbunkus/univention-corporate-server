@@ -56,7 +56,7 @@ def handler(dn, new, old, command):
 		ud.debug(ud.LISTENER, ud.PROCESS, '%s: trigger selfservice invitation for %r' % (name, dn))
 		try:
 			os.mknod(filename)
-		except OSError as exc:
+		except EnvironmentError as exc:
 			if hasattr(exc, 'errno') and exc.errno == 17:
 				pass
 			else:
