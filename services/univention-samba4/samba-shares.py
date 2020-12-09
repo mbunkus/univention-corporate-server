@@ -56,6 +56,7 @@ attributes = []
 modrdn = '1'
 
 tmpFile = '/var/cache/univention-directory-listener/samba-shares.oldObject'
+RE_ACE = re.compile(r'\(.+?\)')
 
 
 def _validate_smb_share_name(name):
@@ -265,11 +266,10 @@ def handler(dn, new, old, command):
 			stdout = str(stdout)
 			prev_aces = set()
 			new_aces = set()
-			re_ace = re.compile(r'\(.+?\)')
 			if 'univentionShareSambaBaseDirAppendACL' in old:
-				prev_aces = set(sum([re.findall(re_ace, acl) for acl in old['univentionShareSambaBaseDirAppendACL']], []))
+				prev_aces = set(sum([RE_ACE.findall(acl) for acl in old['univentionShareSambaBaseDirAppendACL']], []))
 			if 'univentionShareSambaBaseDirAppendACL' in new:
-				new_aces = set(sum([re.findall(re_ace, acl) for acl in new['univentionShareSambaBaseDirAppendACL']], []))
+				new_aces = set(sum([RE_ACE.findall(acl) for acl in new['univentionShareSambaBaseDirAppendACL']], []))
 
 			if (new_aces and new_aces != prev_aces) or (prev_aces and not new_aces):
 				# if old != new -> delete everything from old!
@@ -290,7 +290,7 @@ def handler(dn, new, old, command):
 					owner = res.group(1)
 					old_aces = res.group(2)
 
-					old_aces = re.findall(re_ace, old_aces)
+					old_aces = RE_ACE.findall(old_aces)
 					allow_aces = "".join([ace for ace in old_aces if 'A;' in ace])
 					deny_aces = "".join([ace for ace in old_aces if 'D;' in ace])
 					allow_aces += "".join([ace for ace in new_aces if 'A;' in ace])
