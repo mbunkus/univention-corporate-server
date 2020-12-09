@@ -33,7 +33,6 @@
 from __future__ import absolute_import
 
 from listener import SetUID, configRegistry, run
-import listener
 import os
 import re
 import pipes
@@ -166,10 +165,7 @@ def handleTimeperiod(dn, new, old):
 	if new:
 		cn = new['cn'][0].decode('UTF-8')
 		filename = conffilename % (cn,)
-		listener.setuid(0)
-
 		periods = new['univentionNagiosTimeperiod'][0].decode('UTF-8').split('#')
-
 		writeTimeperiod(filename, cn, new['description'][0].decode('UTF-8'), periods)
 
 
@@ -681,7 +677,6 @@ def postrun():
 					run(initscript, ['nagios', 'restart'], uid=0)
 			else:
 				ud.debug(ud.LISTENER, ud.ERROR, 'NAGIOS-SERVER: nagios reported an error in configfile /etc/nagios/nagios.cfg. Please restart nagios manually: "%s restart".' % initscript)
-				listener.unsetuid()
 
 		else:
 			if retcode == 0:
@@ -689,5 +684,4 @@ def postrun():
 				run(initscript, ['nagios', 'reload'], uid=0)
 			else:
 				ud.debug(ud.LISTENER, ud.ERROR, 'NAGIOS-SERVER: nagios reported an error in configfile /etc/nagios/nagios.cfg. Please restart nagios manually: "%s restart".' % initscript)
-				listener.unsetuid()
 		__reload = False
