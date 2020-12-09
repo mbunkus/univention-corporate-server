@@ -318,7 +318,6 @@ def handler(dn, new, old, operation):
 
 if __name__ == '__main__':
 	from argparse import ArgumentParser
-	import sys
 	import subprocess
 	from ldif import LDIFParser
 	import io
@@ -332,7 +331,6 @@ if __name__ == '__main__':
 
 	if not options.direct_resync:
 		parser.error("The option --direct-resync is required to run this module directly")
-		sys.exit(1)
 
 	ud.init("stderr", ud.NO_FLUSH, ud.NO_FUNCTION)
 	ud.set_level(ud.LISTENER, int(configRegistry.get('listener/debug/level', 2)))
