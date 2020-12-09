@@ -158,8 +158,8 @@ class DovecotSharedFolderListener(DovecotListener):
 			# use a shared folder
 			new_mailbox = new["mailPrimaryAddress"][0].decode('ASCII')
 			# the maildir will be autocreated by dovecot
-			acls = new.get(self.acl_key, [])[:]
-			acls = [acl.decode('UTF-8') for acl in acls]
+			_acls = new.get(self.acl_key, [])[:]
+			acls = [acl.decode('UTF-8') for acl in _acls]
 			# Even if there are no ACL entries, we must still _change_ at
 			# least one entry through IMAP, so the shared mailbox list
 			# dictionary is updated. Lets remove the (afterwards) unnecessary
@@ -181,9 +181,9 @@ class DovecotSharedFolderListener(DovecotListener):
 			try:
 				self.update_public_mailbox_configuration()
 				self.create_public_folder(new_mailbox)
-				acls = new.get(self.acl_key)
-				if acls:
-					acls = [acl.decode('UTF-8') for acl in acls]
+				acls2 = new.get(self.acl_key)
+				if acls2:
+					acls = [acl.decode('UTF-8') for acl in acls2]
 					self.doveadm_set_mailbox_acls("%s/INBOX" % new_mailbox, acls)
 					self.log_p("Set ACLs on '%s'." % new_mailbox)
 			except Exception:
@@ -494,14 +494,14 @@ class DovecotSharedFolderListener(DovecotListener):
 		# type: (Dict[str, List[bytes]], Dict[str, List[bytes]]) -> List[str]
 		acl_diff = dict()
 		# find new ACLs
-		for acl in new.get(self.acl_key, []):
-			acl = acl.decode('UTF-8')
+		for _acl in new.get(self.acl_key, []):
+			acl = _acl.decode('UTF-8')
 			right = acl.split()[-1]
 			identifier = " ".join(acl.split()[:-1])
 			acl_diff[identifier] = right
 		# remove old ACLs
-		for acl in old.get(self.acl_key, []):
-			acl = acl.decode('UTF-8')
+		for _acl in old.get(self.acl_key, []):
+			acl = _acl.decode('UTF-8')
 			identifier = " ".join(acl.split()[:-1])
 			if identifier not in acl_diff:
 				acl_diff[identifier] = "none"
@@ -535,8 +535,8 @@ class DovecotSharedFolderListener(DovecotListener):
 		acls = new.get(self.acl_key, [])
 		folder_acls = list()
 		for acl in acls:
-			acl = acl.decode('UTF-8')
-			identifier, right = self._split_udm_imap_acl_doveadm(acl)
+			_acl = acl.decode('UTF-8')
+			identifier, right = self._split_udm_imap_acl_doveadm(_acl)
 			folder_acls.append(DovecotFolderAclEntry(new_mailbox, identifier, dovecot_acls[right][0]))
 		self.global_acls.add_acls(folder_acls)
 

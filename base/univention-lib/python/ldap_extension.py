@@ -350,8 +350,8 @@ class UniventionLDAPExtension(six.with_metaclass(ABCMeta)):
 				"--position", self.target_container_dn,
 			] + common_udm_options + active_change_udm_options
 			p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-			(stdout, stderr) = p.communicate()
-			stdout = stdout.decode('UTF-8', 'replace')
+			(_stdout, stderr) = p.communicate()
+			stdout = _stdout.decode('UTF-8', 'replace')
 			print(stdout)
 			if p.returncode == 0:
 				regex = re.compile('^Object created: (.*)$', re.M)
@@ -368,8 +368,8 @@ class UniventionLDAPExtension(six.with_metaclass(ABCMeta)):
 						"--dn", new_object_dn,
 					]
 					p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-					(stdout, stderr) = p.communicate()
-					stdout = stdout.decode('UTF-8', 'replace')
+					(_stdout, stderr) = p.communicate()
+					stdout = _stdout.decode('UTF-8', 'replace')
 					print(stdout)
 			else:  # check again, might be a race
 				rc, self.object_dn, stdout = self.udm_find_object_dn()
@@ -429,8 +429,8 @@ class UniventionLDAPExtension(six.with_metaclass(ABCMeta)):
 				"--dn", self.object_dn,
 			] + common_udm_options + active_change_udm_options
 			p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-			(stdout, stderr) = p.communicate()
-			stdout = stdout.decode('UTF-8', 'replace')
+			(_stdout, stderr) = p.communicate()
+			stdout = _stdout.decode('UTF-8', 'replace')
 			print(stdout)
 			if p.returncode != 0:
 				print("ERROR: Modification of %s object failed." % (self.udm_module_name,), file=sys.stderr)
@@ -443,8 +443,8 @@ class UniventionLDAPExtension(six.with_metaclass(ABCMeta)):
 					"--dn", self.object_dn,
 				]
 				p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-				(stdout, stderr) = p.communicate()
-				stdout = stdout.decode('UTF-8', 'replace')
+				(_stdout, stderr) = p.communicate()
+				stdout = _stdout.decode('UTF-8', 'replace')
 				print(stdout)
 
 		if not self.object_dn:
@@ -470,8 +470,8 @@ class UniventionLDAPExtension(six.with_metaclass(ABCMeta)):
 		if app_filter:
 			cmd = ["univention-ldapsearch", "-LLL", "(&(objectClass=univentionApp)%s)" % (app_filter,), "cn"]
 			p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-			(stdout, stderr) = p.communicate()
-			stdout = stdout.decode('UTF-8', 'replace')
+			(_stdout, stderr) = p.communicate()
+			stdout = _stdout.decode('UTF-8', 'replace')
 			if p.returncode:
 				print("ERROR: LDAP search failed: %s" % (stdout,), file=sys.stderr)
 				sys.exit(1)
@@ -485,8 +485,8 @@ class UniventionLDAPExtension(six.with_metaclass(ABCMeta)):
 			"--dn", object_dn,
 		]
 		p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-		(stdout, stderr) = p.communicate()
-		stdout = stdout.decode('UTF-8', 'replace')
+		(_stdout, stderr) = p.communicate()
+		stdout = _stdout.decode('UTF-8', 'replace')
 		print(stdout)
 
 	def mark_active(self, handler_name=None):
@@ -643,8 +643,8 @@ class UniventionLDAPSchema(UniventionLDAPExtensionWithListenerHandler):
 				# validate
 				# Slapschema doesn't fail on schema errors, errors are printed to stdout (Bug #45571)
 				p = subprocess.Popen(['/usr/sbin/slaptest', '-u'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, close_fds=True)
-				stdout = p.communicate()[0]
-				stdout = stdout.decode('UTF-8', 'replace')
+				_stdout = p.communicate()[0]
+				stdout = _stdout.decode('UTF-8', 'replace')
 				if p.returncode != 0:
 					ud.debug(ud.LISTENER, ud.ERROR, '%s: validation failed (%s):\n%s.' % (name, p.returncode, stdout))
 					set_handler_message(name, dn, 'slaptest validation failed {} {}'.format(stdout, p.returncode))
@@ -694,8 +694,8 @@ class UniventionLDAPSchema(UniventionLDAPExtensionWithListenerHandler):
 
 					# Slapschema doesn't fail on schema errors, errors are printed to stdout (Bug #45571)
 					p = subprocess.Popen(['/usr/sbin/slaptest', '-u'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, close_fds=True)
-					stdout = p.communicate()[0]
-					stdout = stdout.decode('UTF-8', 'replace')
+					_stdout = p.communicate()[0]
+					stdout = _stdout.decode('UTF-8', 'replace')
 					if p.returncode != 0:
 						ud.debug(ud.LISTENER, ud.ERROR, '%s: validation failed (%s):\n%s.' % (name, p.returncode, stdout))
 						set_handler_message(name, dn, 'slaptest validation failed {} {}'.format(stdout, p.returncode))
@@ -869,8 +869,8 @@ class UniventionLDAPACL(UniventionLDAPExtensionWithListenerHandler):
 				# Create new extension file
 				try:
 					ud.debug(ud.LISTENER, ud.INFO, '%s: Writing new extension file %s.' % (name, new_filename))
-					with open(new_filename, 'wb') as f:
-						f.write(new_object_data)
+					with open(new_filename, 'wb') as fb:
+						fb.write(new_object_data)
 				except IOError:
 					ud.debug(ud.LISTENER, ud.ERROR, '%s: Error writing file %s.' % (name, new_filename))
 					set_handler_message(name, dn, 'Error writing file {}.'.format(new_filename))
@@ -908,8 +908,8 @@ class UniventionLDAPACL(UniventionLDAPExtensionWithListenerHandler):
 
 				# validate
 				p = subprocess.Popen(['/usr/sbin/slaptest', '-u'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, close_fds=True)
-				stdout = p.communicate()[0]
-				stdout = stdout.decode('UTF-8', 'replace')
+				_stdout = p.communicate()[0]
+				stdout = _stdout.decode('UTF-8', 'replace')
 				if p.returncode != 0:
 					ud.debug(ud.LISTENER, ud.ERROR, '%s: slapd.conf validation failed:\n%s.' % (name, stdout))
 					set_handler_message(name, dn, 'slaptest validation failed {} {}'.format(stdout, p.returncode))

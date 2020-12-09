@@ -158,8 +158,8 @@ def handler(dn, new, old, command):
 	# type: (str, Optional[Dict[str, List[bytes]]], Optional[Dict[str, List[bytes]]], str) -> None
 	if os.path.exists(FETCHMAIL_OLD_PICKLE):
 		with open(FETCHMAIL_OLD_PICKLE, 'r') as fd:
-			p = pickle.Unpickler(fd)
-			old = p.load()
+			up = pickle.Unpickler(fd)
+			old = up.load()
 		os.unlink(FETCHMAIL_OLD_PICKLE)
 	if command == 'r':
 		with open(FETCHMAIL_OLD_PICKLE, 'w+') as fd:
