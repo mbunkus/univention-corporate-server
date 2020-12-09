@@ -90,15 +90,13 @@ def handler(dn, new, old, command):
 
 	# create tmp dir
 	tmpDir = os.path.dirname(tmpFile)
-	listener.setuid(0)
-	try:
-		if not os.path.exists(tmpDir):
-			os.makedirs(tmpDir)
-	except Exception as exc:
-		ud.debug(ud.LISTENER, ud.ERROR, "%s: could not create tmp dir %s (%s)" % (name, tmpDir, exc))
-		return
-	finally:
-		listener.unsetuid()
+	with SetUID(0):
+		try:
+			if not os.path.exists(tmpDir):
+				os.makedirs(tmpDir)
+		except Exception as exc:
+			ud.debug(ud.LISTENER, ud.ERROR, "%s: could not create tmp dir %s (%s)" % (name, tmpDir, exc))
+			return
 
 	# modrdn stuff
 	# 'r'+'a' -> renamed
@@ -107,24 +105,22 @@ def handler(dn, new, old, command):
 
 	# write old object to pickle file
 	oldObject = {}
-	listener.setuid(0)
-	try:
-		# object was renamed -> save old object
-		if command == "r" and old:
-			with open(tmpFile, "w+") as fd:
-				os.chmod(tmpFile, 0o600)
-				pickle.dump({"dn": dn, "old": old}, fd)
-		elif command == "a" and not old and os.path.isfile(tmpFile):
-			with open(tmpFile, "r") as fd:
-				p = pickle.load(fd)
-			oldObject = p.get("old", {})
-			os.remove(tmpFile)
-	except Exception as e:
-		if os.path.isfile(tmpFile):
-			os.remove(tmpFile)
-		ud.debug(ud.LISTENER, ud.ERROR, "%s: could not read/write tmp file %s (%s)" % (name, tmpFile, e))
-	finally:
-		listener.unsetuid()
+	with SetUID(0):
+		try:
+			# object was renamed -> save old object
+			if command == "r" and old:
+				with open(tmpFile, "w+") as fd:
+					os.chmod(tmpFile, 0o600)
+					pickle.dump({"dn": dn, "old": old}, fd)
+			elif command == "a" and not old and os.path.isfile(tmpFile):
+				with open(tmpFile, "r") as fd:
+					p = pickle.load(fd)
+				oldObject = p.get("old", {})
+				os.remove(tmpFile)
+		except Exception as e:
+			if os.path.isfile(tmpFile):
+				os.remove(tmpFile)
+			ud.debug(ud.LISTENER, ud.ERROR, "%s: could not read/write tmp file %s (%s)" % (name, tmpFile, e))
 
 	if old:
 		share_name = old.get('univentionShareSambaName', [b''])[0].decode('UTF-8', 'ignore')

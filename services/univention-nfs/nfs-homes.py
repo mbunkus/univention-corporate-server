@@ -86,12 +86,10 @@ def handler(dn, new, old):
 			if host and host == fqdn:
 				if not os.path.exists(path):
 					ud.debug(ud.LISTENER, ud.INFO, "%s: creating share path %s for user %s" % (name, path, uid))
-					listener.setuid(0)
-					try:
-						os.makedirs(path)
-						os.chmod(path, stat.S_IRWXU | stat.S_IXGRP | stat.S_IXOTH)
-						os.chown(path, uidNumber, gidNumber)
-					except Exception as exc:
-						ud.debug(ud.LISTENER, ud.ERROR, "%s: failed to create home path %s for user %s (%s)" % (name, path, uid, exc))
-					finally:
-						listener.unsetuid()
+					with SetUID(0):
+						try:
+							os.makedirs(path)
+							os.chmod(path, stat.S_IRWXU | stat.S_IXGRP | stat.S_IXOTH)
+							os.chown(path, uidNumber, gidNumber)
+						except Exception as exc:
+							ud.debug(ud.LISTENER, ud.ERROR, "%s: failed to create home path %s for user %s (%s)" % (name, path, uid, exc))

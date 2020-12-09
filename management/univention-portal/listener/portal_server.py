@@ -32,6 +32,7 @@ from __future__ import absolute_import
 
 import subprocess
 
+from listener import SetUID
 import univention.debug as ud
 
 import listener
@@ -42,21 +43,12 @@ filter = '(|(univentionObjectType=portals/portal)(univentionObjectType=portals/c
 attributes = []
 
 
+@SetUID(0)
 def handler(dn, new, old):
 	# type: (str, dict, dict) -> None
-	listener.setuid(0)
-	try:
-		if new is None:
-			attrs = old
-		else:
-			attrs = new
-		object_type = attrs.get('univentionObjectType', [])
-		if object_type:
-			module = object_type[0].decode('utf-8').split('/')[-1]
-		else:
-			module = 'unknown'
-		reason = 'ldap:{}:{}'.format(module, dn)
-		ud.debug(ud.LISTENER, ud.INFO, "Updating portal. Reason: %s" % reason)
-		subprocess.call(['/usr/sbin/univention-portal', 'update', '--reason', reason], stdout=subprocess.PIPE)
-	finally:
-		listener.unsetuid()
+	attrs = old if new is None else new
+	object_type = attrs.get('univentionObjectType', [])
+	module = object_type[0].decode('utf-8').split('/')[-1] if object_type else 'unknown'
+	reason = 'ldap:{}:{}'.format(module, dn)
+	ud.debug(ud.LISTENER, ud.INFO, "Updating portal. Reason: %s" % reason)
+	subprocess.call(['/usr/sbin/univention-portal', 'update', '--reason', reason], stdout=subprocess.PIPE)

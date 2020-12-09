@@ -27,8 +27,7 @@
 #
 from __future__ import absolute_import
 
-from listener import run
-import listener
+from listener import SetUID, run
 import univention.debug as ud
 import re
 import univention.config_registry
@@ -211,16 +210,14 @@ def handler(dn, new, old, command):
 			configRegistry = univention.config_registry.ConfigRegistry()
 			configRegistry.load()
 
-			listener.setuid(0)
 			try:
-				lo = univention.uldap.getMachineConnection()
+				with SetUID(0):
+					lo = univention.uldap.getMachineConnection()
 				modlist = [('univentionFetchmailPasswd', new['univentionFetchmailPasswd'][0], b"")]
 				lo.modify(dn, modlist)
 				ud.debug(ud.LISTENER, ud.INFO, 'fetchmail: reset password successfully')
 			except Exception as exc:
 				ud.debug(ud.LISTENER, ud.ERROR, 'fetchmail: cannot reset password in LDAP (%s): %s' % (dn, exc))
-			finally:
-				listener.unsetuid()
 
 
 def postrun():

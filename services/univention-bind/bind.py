@@ -255,11 +255,10 @@ def _remove_zone(zonename):
 	__zone_created_or_removed = True
 
 
+@SetUID(0)
 def clean():
-	# type: () -> None
-	"""Reset listener state."""
-	listener.setuid(0)
-	try:
+		# type: () -> None
+		"""Reset listener state."""
 		if os.path.exists(NAMED_CONF_FILE):
 			os.unlink(NAMED_CONF_FILE)
 		open(NAMED_CONF_FILE, 'w').close()
@@ -268,8 +267,6 @@ def clean():
 			for f in os.listdir(NAMED_CONF_DIR):
 				os.unlink(os.path.join(NAMED_CONF_DIR, f))
 			os.rmdir(NAMED_CONF_DIR)
-	finally:
-		listener.unsetuid()
 
 
 def _reload(zones, restart=False, dns_backend='ldap'):
