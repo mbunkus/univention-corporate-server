@@ -35,10 +35,11 @@ from __future__ import absolute_import
 import os
 from six.moves import cPickle as pickle
 
-from listener import run
-import listener
+from listener import configRegistry, run
 from univention.mail.dovecot import DovecotListener
 
+
+fqdn = ('%(hostname)s.%(domainname)s' % configRegistry).lower()
 
 name = 'dovecot'
 description = 'manage imap folders'
@@ -71,7 +72,7 @@ class DovecotUserListener(DovecotListener):
 
 	def move_email_account2(self, dn, old_mail, new_mail):
 		# type: (str, str, str) -> None
-		if listener.configRegistry.is_true('mail/dovecot/mailbox/rename', False):
+		if configRegistry.is_true('mail/dovecot/mailbox/rename', False):
 			# rename/move
 			try:
 				self.move_user_home(new_mail, old_mail)
@@ -125,14 +126,12 @@ def handler(dn, new, old, command):
 	elif command == 'a':
 		old = load_old(old)
 
-	listener.configRegistry.load()
+	configRegistry.load()
 	dl = DovecotUserListener(name)
 	oldMailPrimaryAddress = old.get('mailPrimaryAddress', [b""])[0].decode('UTF-8').lower()
 	newMailPrimaryAddress = new.get('mailPrimaryAddress', [b""])[0].decode('UTF-8').lower()
 	oldHomeServer = old.get('univentionMailHomeServer', [b''])[0].decode('UTF-8').lower()
 	newHomeServer = new.get('univentionMailHomeServer', [b''])[0].decode('UTF-8').lower()
-	fqdn = '%s.%s' % (listener.configRegistry['hostname'], listener.configRegistry['domainname'])
-	fqdn = fqdn.lower()
 	# If univentionMailHomeServer is not set, all servers are responsible.
 	is_old_home_server = oldHomeServer == "" or oldHomeServer == fqdn
 	is_new_home_server = newHomeServer == "" or newHomeServer == fqdn

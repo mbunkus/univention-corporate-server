@@ -38,7 +38,7 @@ import traceback
 import imaplib
 import shutil
 import tempfile
-from listener import SetUID
+from listener import SetUID, configRegistry
 try:
 	from typing import Any, Dict, List, Optional, Tuple  # noqa F401
 except ImportError:
@@ -99,8 +99,7 @@ class DovecotFolderAclEntry(object):
 class DovecotGlobalAclFile(object):
 	dovemail_gid = grp.getgrnam('dovemail').gr_gid
 
-	def __init__(self, listener):  # type: (Any) -> None
-		self.listener = listener
+	def __init__(self):  # type: () -> None
 		self._acls = []  # type: List[DovecotFolderAclEntry]
 		self._fix_permissions()
 
@@ -151,7 +150,7 @@ class DovecotSharedFolderListener(DovecotListener):
 		super(DovecotSharedFolderListener, self).__init__(*args, **kwargs)
 		self.modules = ["mail/folder"]
 		self.acl_key = "univentionMailACL"
-		self.global_acls = DovecotGlobalAclFile(self.listener)
+		self.global_acls = DovecotGlobalAclFile()
 
 	def add_shared_folder(self, new):  # type: (Dict[str, List[bytes]]) -> None
 		if "mailPrimaryAddress" in new:
@@ -214,7 +213,7 @@ class DovecotSharedFolderListener(DovecotListener):
 			self.update_public_mailbox_configuration(delete_only=old_mailbox)
 
 		# remove mailbox from disk
-		if self.listener.configRegistry.is_true("mail/dovecot/mailbox/delete", False):
+		if configRegistry.is_true("mail/dovecot/mailbox/delete", False):
 			try:
 				self.listener.setuid(0)
 				shutil.rmtree(path, ignore_errors=True)
@@ -432,7 +431,7 @@ class DovecotSharedFolderListener(DovecotListener):
 		# consistency with the LDAP.
 		if delete_only:
 			try:
-				old_info = self.listener.configRegistry.get("mail/dovecot/internal/sharedfolders", "").split()
+				old_info = configRegistry.get("mail/dovecot/internal/sharedfolders", "").split()
 				emails_quota = [info for info in old_info if not info.startswith(delete_only + ":")]
 			except Exception:
 				self.log_e("update_public_mailbox_configuration(): Failed to update public mailbox configuration:\n%s" % traceback.format_exc())

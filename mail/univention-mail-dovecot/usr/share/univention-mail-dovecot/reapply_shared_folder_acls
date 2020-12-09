@@ -33,21 +33,9 @@
 import copy
 import optparse
 import univention.debug as ud
-from univention.config_registry import ConfigRegistry
+from listener import configRegistry as ucr
 from univention.uldap import getMachineConnection
 from univention.mail.dovecot_shared_folder import DovecotSharedFolderListener
-
-
-class ListenerMockup(object):
-
-	def __init__(self, ucr):
-		self.configRegistry = ucr
-
-	def unsetuid(self):
-		pass
-
-	def setuid(self, uid):
-		pass
 
 
 def main():
@@ -69,14 +57,10 @@ Reapplies the ACLs to all shared IMAP folder on this system.'''
 		if options.verbose:
 			print(msg)
 
-	ucr = ConfigRegistry()
-	ucr.load()
-
 	ldapfilter = '(&(objectClass=univentionMailSharedFolder)(univentionMailHomeServer=%(hostname)s.%(domainname)s))' % ucr
 
 	log(ud.INFO, 'Initialising reapply_shared_folder_acls...')
-	lm = ListenerMockup(ucr)
-	dl = DovecotSharedFolderListener(lm, 'reapply_shared_folder_acls')
+	dl = DovecotSharedFolderListener('reapply_shared_folder_acls')
 
 	# get ldap connection
 	lo = getMachineConnection()

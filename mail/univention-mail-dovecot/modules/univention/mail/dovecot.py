@@ -38,7 +38,7 @@ import pwd
 import grp
 import shutil
 import stat
-from listener import SetUID
+from listener import SetUID, configRegistry
 try:
 	from typing import Any, Optional, Sequence, Tuple  # noqa F401
 except ImportError:
@@ -51,9 +51,8 @@ default_sieve_script = "/var/lib/dovecot/sieve/default.sieve"
 
 class DovecotListener(object):
 
-	def __init__(self, listener, name):
+	def __init__(self, name):
 		# type: (str) -> None
-		self.listener = listener
 		self.name = name
 
 	def log_p(self, msg):
@@ -66,8 +65,8 @@ class DovecotListener(object):
 
 	def new_email_account(self, email):
 		# type: (str) -> None
-		spam_folder = self.listener.configRegistry.get("mail/dovecot/folder/spam")
-		if self.listener.configRegistry.is_true("mail/dovecot/sieve/spam", True)\
+		spam_folder = configRegistry.get("mail/dovecot/folder/spam")
+		if configRegistry.is_true("mail/dovecot/sieve/spam", True)\
 			and spam_folder and spam_folder.lower() != "none":
 			try:
 				self.upload_activate_sieve_script(email, default_sieve_script)
@@ -77,7 +76,7 @@ class DovecotListener(object):
 
 	def delete_email_account(self, dn, email):
 		# type: (str, str) -> None
-		if self.listener.configRegistry.is_true('mail/dovecot/mailbox/delete', False):
+		if configRegistry.is_true('mail/dovecot/mailbox/delete', False):
 			try:
 				old_localpart, old_domainpart = email.split("@")
 				global_mail_home = self.get_maillocation()
@@ -120,7 +119,7 @@ class DovecotListener(object):
 
 	def move_user_home(self, newMailPrimaryAddress, oldMailPrimaryAddress, force_rename=False):
 		# type: (str, str, bool) -> None
-		if not force_rename and not self.listener.configRegistry.is_true("mail/dovecot/mailbox/rename", False):
+		if not force_rename and not configRegistry.is_true("mail/dovecot/mailbox/rename", False):
 			self.log_p("Renaming of mailboxes disabled, not moving ('%s' -> '%s')." % (oldMailPrimaryAddress, newMailPrimaryAddress))
 			return
 
@@ -165,7 +164,7 @@ class DovecotListener(object):
 		# type: (str, str, str, bool) -> None
 		# create parent path in any case to make sure it has correct ownership
 		self.mkdir_p(os.path.dirname(new_path))
-		if not force_rename and not self.listener.configRegistry.is_true("mail/dovecot/mailbox/rename", False):
+		if not force_rename and not configRegistry.is_true("mail/dovecot/mailbox/rename", False):
 			self.log_p("Renaming of mailboxes disabled, not moving mail home (of mail '%s') from '%s' to '%s." % (email, old_path, new_path))
 			return
 		try:
@@ -192,9 +191,9 @@ class DovecotListener(object):
 		# type: (str, str) -> None
 		try:
 			master_name, master_pw = self.get_masteruser_credentials()
-			ca_file = self.listener.configRegistry.get("mail/dovecot/sieve/client/cafile", "/etc/univention/ssl/ucsCA/CAcert.pem")
-			fqdn = "%s.%s" % (self.listener.configRegistry['hostname'], self.listener.configRegistry['domainname'])
-			fqdn = self.listener.configRegistry.get("mail/dovecot/sieve/client/server", fqdn)
+			ca_file = configRegistry.get("mail/dovecot/sieve/client/cafile", "/etc/univention/ssl/ucsCA/CAcert.pem")
+			fqdn = "%(hostname)s.%(domainname)s" % configRegistry['hostname']
+			fqdn = configRegistry.get("mail/dovecot/sieve/client/server", fqdn)
 			_cmd = [
 				"sieve-connect", "--user", "%s*%s" % (email, master_name),
 				"--server", fqdn,
