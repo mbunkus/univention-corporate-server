@@ -476,17 +476,18 @@ class ProcessorBase(Base):
 		if msg.arguments:
 			command = msg.arguments[0]
 
-		module_name = moduleManager.module_providing(self.__command_list, command)
-
-		try:
-			# check if the module exists in the module manager
-			moduleManager[module_name]
-		except KeyError:
-			# the module has been removed from moduleManager (probably through a reload)
-			CORE.warn('Module %r (command=%r, id=%r) does not exists anymore' % (module_name, command, msg.id))
-			moduleManager.load()
-			self._reload_acls_and_permitted_commands()
-			module_name = None
+		for i in range(2):
+			module_name = moduleManager.module_providing(self.__command_list, command)
+			try:
+				# check if the module exists in the module manager
+				moduleManager[module_name]
+				break
+			except KeyError:
+				# the module has been removed from moduleManager (probably through a reload)
+				CORE.warn('Module %r (command=%r, id=%r) does not exists anymore' % (module_name, command, msg.id))
+				moduleManager.load()
+				self._reload_acls_and_permitted_commands()
+				module_name = None
 
 		if not module_name:
 			raise Forbidden()
