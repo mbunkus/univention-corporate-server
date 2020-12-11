@@ -40,7 +40,6 @@ import signal
 import traceback
 import time
 import resource
-from errno import ESRCH
 from argparse import ArgumentParser
 
 import six
@@ -147,42 +146,6 @@ class UMC_Daemon(DaemonRunner):
 			return
 		return super(UMC_Daemon, self)._open_streams_from_app_stream_paths(app)
 
-	def _reload(self):
-		"""Handler for the reload action"""
-		if self.pidfile.is_locked():
-			pid = self.pidfile.read_pid()
-			try:
-				os.kill(pid, signal.SIGUSR1)
-			except OSError as exc:
-				if exc.errno == ESRCH:
-					CORE.process('Reload failed: UMC-Server is not running')
-					return
-				raise
-		else:
-			CORE.process('Reload failed: server is not running')
-
-	DaemonRunner.action_funcs['reload'] = _reload
-
-	def _restart(self):
-		"""Handler for the restart action. """
-		if self.pidfile.is_locked():
-			CORE.process('Stopping UMC server ...')
-			self._stop()
-
-		CORE.process('Starting UMC server ...')
-		self._start()
-
-	def _crestart(self):
-		"""Handler for the crestart action. """
-		if not self.pidfile.is_locked():
-			CORE.process('The UMC server will not be restarted as it is not running currently')
-			return
-
-		CORE.process('Stopping UMC server ...')
-		self._stop()
-		CORE.process('Starting UMC server ...')
-		self._start()
-
 	def _terminate_daemon_process(self):
 		""" Terminate the daemon process specified in the current PID file.
 			"""
@@ -204,9 +167,6 @@ class UMC_Daemon(DaemonRunner):
 				CORE.process('The UMC server is still running. Kill it!')
 				os.kill(pid, signal.SIGKILL)
 				self.pidfile.break_lock()
-
-	DaemonRunner.action_funcs['restart'] = _restart
-	DaemonRunner.action_funcs['crestart'] = _crestart
 
 	def _usage_exit(self, argv):
 		self.parser.error('invalid action')
