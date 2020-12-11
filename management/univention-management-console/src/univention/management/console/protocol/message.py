@@ -80,8 +80,8 @@ class Message(object):
 	__counter = 0
 
 	def __init__(self, type=REQUEST, command=u'', mime_type=MIMETYPE_JSON, data=None, arguments=None, options=None):
-		# type: (RequestType, str, str, bytes, List[str], Dict[str, Any]) -> None
-		self.id = None
+		# type: (RequestType, Text, str, bytes, List[str], Dict[str, Any]) -> None
+		self.id = None  # type: Optional[Text]
 		if mime_type == MIMETYPE_JSON:
 			self.body = {}  # type: UmcpBody
 		else:
@@ -93,11 +93,13 @@ class Message(object):
 			self.options = options if options is not None else {}
 
 	def _create_id(self):
+		# type: () -> None
 		# cut off 'L' for long
 		self.id = u'%lu-%d' % (int(time.time() * 100000), Message.__counter)
 		Message.__counter += 1
 
 	def recreate_id(self):
+		# type: () -> None
 		"""Creates a new unique ID for the message"""
 		self._create_id()
 
@@ -158,6 +160,7 @@ class Request(Message):
 	'''Represents an UMCP request message'''
 
 	def __init__(self, command, arguments=None, options=None, mime_type=MIMETYPE_JSON):
+		# type: (str, Any, Any, str) -> None
 		Message.__init__(self, Message.REQUEST, command, arguments=arguments, options=options, mime_type=mime_type)
 		self._create_id()
 
@@ -184,7 +187,7 @@ class Response(Message):
 	recreate_id = None
 
 	def set_body(self, filename, mimetype=None):
-		# type: (str, str) -> None
+		# type: (str, Optional[str]) -> None
 		'''Set body of response by guessing the mime type of the given
 		file if not specified and adding the content of the file to the body. The mime
 		type is guessed using the extension of the filename.'''

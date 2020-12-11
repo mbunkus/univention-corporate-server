@@ -77,7 +77,7 @@ from saml2.metadata import create_metadata_string
 from saml2.response import VerificationError, UnsolicitedResponse, StatusError
 from saml2.s_utils import UnknownPrincipal, UnsupportedBinding, rndstr
 from saml2.sigver import MissingKey, SignatureError
-from saml2.ident import code
+from saml2.ident import code as encode_name_id, decode as decode_name_id
 
 from univention.lib.i18n import NullTranslation
 
@@ -88,6 +88,12 @@ except ImportError:  # Python 2
 	html_parser = HTMLParser.HTMLParser()
 	unescape = html_parser.unescape
 	from cgi import escape
+
+try:
+	from time import monotonic
+except ImportError:
+	from monotonic import monotonic
+
 
 _ = NullTranslation('univention-management-console-frontend').translate
 
@@ -163,35 +169,44 @@ _upload_manager = UploadManager()
 
 class User(object):
 
-	__slots__ = ('sessionid', 'username', 'password', 'saml', '_time_remaining')
+	__slots__ = ('sessionid', 'username', 'password', 'saml', '_timeout', '_timeout_id')
 
 	def __init__(self, sessionid, username, password, saml=None):
 		self.sessionid = sessionid
 		self.username = username
 		self.password = password
 		self.saml = saml
-		self._time_remaining = _session_timeout
+		self._timeout_id = None
 		self.reset_timeout()
 
+	def _session_timeout_timer(self):
+		session = UMCP_Dispatcher.sessions.get(self.sessionid)
+		if session and session._requestid2response_queue:
+			self._timeout = 1
+			self._timeout_id = notifier.timer_add(1000, self._session_timeout_timer)
+			return
+
+		CORE.info('session %r timed out' % (self.sessionid,))
+		Ressource.sessions.pop(self.sessionid, None)
+		self.on_logout()
+		return False
+
 	def reset_timeout(self):
-		self._time_remaining = self.session_validity
+		self.disconnect_timer()
+		self._timeout = monotonic() + _session_timeout
+		self._timeout_id = notifier.timer_add(int(self.session_end_time - monotonic()) * 1000, self._session_timeout_timer)
+
+	def disconnect_timer(self):
+		notifier.timer_remove(self._timeout_id)
+
+	def timed_out(self, now):
+		return self.session_end_time < now
 
 	@property
-	def session_validity(self):
-		if self.saml is not None:
-			return self.time_remaining
-		return _session_timeout
-
-	@property
-	def time_remaining(self):
-		remaining = []
-		if self.saml is not None:
-			remaining.append(self.saml.time_remaining)
-		remaining.append(self._time_remaining)
-		try:
-			return min(remaining)
-		except ValueError:  # no SAML, no client
-			return 0
+	def session_end_time(self):
+		if self.is_saml_user() and self.saml.session_end_time:
+			return self.saml.session_end_time
+		return self._timeout
 
 	def is_saml_user(self):
 		# self.saml indicates that it was originally a
@@ -199,6 +214,14 @@ class User(object):
 		# real password. the saml user object is still there,
 		# though
 		return self.password is None and self.saml
+
+	def on_logout(self):
+		self.disconnect_timer()
+		if SAMLBase.SP and self.saml:
+			try:
+				SAMLBase.SP.local_logout(decode_name_id(self.saml.name_id))
+			except Exception as exc:  # e.g. bsddb.DBNotFoundError
+				CORE.warn('Could not remove SAML session: %s' % (exc,))
 
 	def get_umc_password(self):
 		if self.is_saml_user():
@@ -212,33 +235,21 @@ class User(object):
 		else:
 			return None
 
-	def timed_out(self):
-		return self.saml.timed_out()
-
 	def __repr__(self):
 		return '<User(%s, %s, %s)>' % (self.username, self.sessionid, self.saml is not None)
 
 
 class SAMLUser(object):
 
-	__slots__ = ('message', 'username', 'not_on_or_after', 'name_id')
+	__slots__ = ('message', 'username', 'session_end_time', 'name_id')
 
 	def __init__(self, response, message):
-		self.not_on_or_after = response.not_on_or_after
-		self.name_id = code(response.name_id)
+		self.name_id = encode_name_id(response.name_id)
 		self.message = message
 		self.username = u''.join(response.ava['uid'])
-
-	@property
-	def time_remaining(self):
-		if self.not_on_or_after == 0:
-			return 0
-		return int(self.not_on_or_after - time.time())
-
-	def timed_out(self):
-		if self.not_on_or_after == 0:
-			return False
-		return self.time_remaining < 0
+		self.session_end_time = 0
+		if response.not_on_or_after:
+			self.session_end_time = int(monotonic() + (response.not_on_or_after - time.time()))
 
 
 traceback_pattern = re.compile(r'(Traceback.*most recent call|File.*line.*in.*\d)')
@@ -581,7 +592,7 @@ class Resource(RequestHandler):
 
 	def check_saml_session_validity(self):
 		user = self.get_user()
-		if user and user.saml is not None and user.time_remaining < 1:
+		if user and user.saml is not None and user.timed_out(monotonic()):
 			raise HTTPError(UNAUTHORIZED)
 
 	def set_cookies(self, *cookies, **kwargs):
@@ -603,8 +614,9 @@ class Resource(RequestHandler):
 	def set_session(self, sessionid, username, password=None, saml=None):
 		olduser = self.get_user()
 
+		if olduser:
+			olduser.disconnect_timer()
 		user = User(sessionid, username, password, saml or olduser and olduser.saml)
-		self._session_timeout_timer(user)
 
 		self.sessions[sessionid] = user
 		self.set_cookies(('UMCSessionId', sessionid), ('UMCUsername', username))
@@ -613,7 +625,9 @@ class Resource(RequestHandler):
 	def expire_session(self):
 		sessionid = self.get_session_id()
 		if sessionid:
-			self.sessions.pop(sessionid, None)
+			user = self.sessions.pop(sessionid, None)
+			if user:
+				user.on_logout()
 			UMCP_Dispatcher.cleanup_session(sessionid)
 			self.set_cookies(('UMCSessionId', ''), expires=datetime.datetime.fromtimestamp(0))
 
@@ -622,27 +636,9 @@ class Resource(RequestHandler):
 		if not value or value not in self.sessions:
 			return
 		user = self.sessions[value]
-		if user.time_remaining <= 0:
+		if user.timed_out(monotonic()):
 			return
 		return user
-
-	def _session_timeout_timer(self, user):
-		"""In order to avoid problems when the system time is changed (e.g.,
-		via rdate), we register a timer event that counts down the session
-		timeout second-wise."""
-
-		# count down the remaining time
-		user._time_remaining -= 1
-
-		session = UMCP_Dispatcher.sessions.get(user.sessionid)
-		if user._time_remaining <= 0 and (not session or not session._requestid2response_queue):
-			self._x_log('info', 'session timed out')
-			self.sessions.pop(user.sessionid, None)
-			return
-
-		# count down the timer second-wise (in order to avoid problems when
-		# changing the system time, e.g. via rdate)
-		notifier.timer_add(1000, lambda: self._session_timeout_timer(user))
 
 
 def json_response(func):
@@ -693,8 +689,7 @@ class SessionInfo(Resource):
 			raise HTTPError(UNAUTHORIZED)
 		info['username'] = user.username
 		info['auth_type'] = user.saml and 'SAML'
-		info['remaining'] = user.time_remaining
-		info['validity'] = user.session_validity
+		info['remaining'] = int(user.session_end_time - monotonic())
 		return {"status": 200, "result": info, "message": ""}
 
 	def post(self):
@@ -821,7 +816,7 @@ class AuthSSO(Resource):
 		self._x_log('info', '/auth/sso: got new auth request')
 
 		user = self.get_user()
-		if not user or not user.saml or user.timed_out():
+		if not user or not user.saml or user.timed_out(monotonic()):
 			# redirect user to login page in case he's not authenticated or his session timed out
 			self.redirect('/univention/saml/', status=303)
 			return
@@ -862,8 +857,12 @@ class AuthSSO(Resource):
 class SAMLBase(Resource):
 
 	SP = None
+	identity_cache = '/var/cache/univention-management-console/saml.bdb'
+	state_cache = SharedMemoryDict()  # None
 	configfile = '/usr/share/univention-management-console/saml/sp.py'
-	state_cache = SharedMemoryDict()
+	idp_query_param = "IdpQuery"
+	bindings = [BINDING_HTTP_REDIRECT, BINDING_HTTP_POST, BINDING_HTTP_ARTIFACT]
+	outstanding_queries = {}
 
 
 class SamlMetadata(SAMLBase):
@@ -876,11 +875,6 @@ class SamlMetadata(SAMLBase):
 
 class SamlACS(SAMLBase):
 
-	idp_query_param = "IdpQuery"
-	bindings = [BINDING_HTTP_REDIRECT, BINDING_HTTP_POST, BINDING_HTTP_ARTIFACT]
-
-	outstanding_queries = {}
-
 	@property
 	def sp(self):
 		if not self.SP and not self.reload():
@@ -892,7 +886,7 @@ class SamlACS(SAMLBase):
 		CORE.info('Reloading SAML service provider configuration')
 		sys.modules.pop(os.path.splitext(os.path.basename(cls.configfile))[0], None)
 		try:
-			cls.SP = Saml2Client(config_file=cls.configfile, state_cache=cls.state_cache, identity_cache='/usr/share/univention-management-console/saml/users.bdb')
+			cls.SP = Saml2Client(config_file=cls.configfile, identity_cache=cls.identity_cache, state_cache=cls.state_cache)
 			return True
 		except Exception:
 			CORE.warn('Startup of SAML2.0 service provider failed:\n%s' % (traceback.format_exc(),))
@@ -916,24 +910,23 @@ class SamlACS(SAMLBase):
 		response = self.acs(message, binding)
 		saml = SAMLUser(response, message)
 		self.set_session(self.create_sessionid(), saml.username, saml=saml)
-		self.redirect('/univention/auth/sso?return=%s' % (quote(relay_state),), status=303)
+		# protect against javascript:alert('XSS'), mailto:foo and other non relative links!
+		location = urlparse(relay_state)
+		if location.path.startswith('//'):
+			location = urlparse('')
+		location = urlunsplit(('', '', location.path, location.query, location.fragment))
+		self.redirect(location, status=303)
 
 	def attribute_consuming_service_iframe(self, binding, message, relay_state):
 		self.request.headers['Accept'] = 'application/json'  # enforce JSON response in case of errors
 		self.request.headers['X-Iframe-Response'] = 'true'  # enforce textarea wrapping
 		response = self.acs(message, binding)
 		saml = SAMLUser(response, message)
-		req = Request('AUTH')
-		req.body = {
-			"auth_type": "SAML",
-			"username": saml.username,
-			"password": saml.message
-		}
 		sessionid = self.create_sessionid()
-		auth_response = self._auth_request(req, sessionid)
 		self.set_session(sessionid, saml.username, saml=saml)
 		self.set_header('Content-Type', 'text/html')
-		self.finish(b'<html><body><textarea>%s</textarea></body></html>' % (auth_response,))
+		data = {"status": 200, "result": {"username": saml.username}}
+		self.finish(b'<html><body><textarea>%s</textarea></body></html>' % (json.dumps(data).encode('ASCII'),))
 
 	def _logout_success(self):
 		user = self.get_user()
@@ -977,6 +970,7 @@ class SamlACS(SAMLBase):
 			raise SamlError().from_exception(*sys.exc_info())
 		if response is None:
 			raise SamlError().unparsed_saml_response()
+		self.outstanding_queries.pop(response.in_response_to, None)
 		return response
 
 	def do_single_sign_on(self, **kwargs):
@@ -1148,7 +1142,7 @@ class Server(object):
 			help='specifies an alternative log file [default: %(default)s]'
 		)
 		self.parser.add_argument(
-			'-c', '--cpus', default=get_int('umc/http/cpus', 1),
+			'-c', '--processes', default=get_int('umc/http/processes', 1), type=int,
 			help='How many processes to start'
 		)
 		self.options = self.parser.parse_args()
@@ -1159,9 +1153,9 @@ class Server(object):
 
 		# init logging
 		if True or not self.options.daemon_mode:
-			log_init('/dev/stderr', self.options.debug)
+			log_init('/dev/stderr', self.options.debug, self.options.processes > 1)
 		else:
-			log_init(self.options.log_file, self.options.debug)
+			log_init(self.options.log_file, self.options.debug, self.options.processes > 1)
 
 		os.umask(0o077)
 

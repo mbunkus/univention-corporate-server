@@ -170,6 +170,7 @@ class ModuleProcess(object):
 		raise tornado.gen.Return(response)
 
 	def stop(self):
+		# type: () -> None
 		CORE.process('ModuleProcess: stopping %r' % (self.pid(),))
 		if self.__process:
 			tornado.ioloop.IOLoop.instance().add_callback(self.stop_process)
@@ -187,6 +188,7 @@ class ModuleProcess(object):
 		self.__process = None
 
 	def _died(self, returncode):
+		# type: (int) -> None
 		pid = self.pid()
 		CORE.process('ModuleProcess: child %d (%s) exited with %d' % (pid, self.name, returncode))
 		# if killtimer has been set then remove it
@@ -205,6 +207,7 @@ class ModuleProcess(object):
 		raise BadGateway('%s: %s' % (_('Module process died unexpectedly'), self.name))
 
 	def pid(self):
+		# type: () -> int
 		"""Returns process ID of module process"""
 		if self.__process is None:
 			return 0
@@ -294,7 +297,7 @@ class User(object):
 
 class Session(object):
 
-	__slots__ = ('acls', 'user', 'processes', 'authenticated')
+	__slots__ = ('acls', 'user', 'processes', 'authenticated', 'timeout')
 
 	__auth = AuthHandler()
 
@@ -303,6 +306,8 @@ class Session(object):
 		self.user = User(self)
 		self.acls = IACLs(self)
 		self.processes = Processes(self)
+		self.timeout = None
+		self.reset_connection_timeout()
 
 	def renew(self):
 		CORE.info('Renewing session')
@@ -318,7 +323,7 @@ class Session(object):
 		raise tornado.gen.Return(result)
 
 	def reset_connection_timeout(self):
-		self.time_remaining = SERVER_CONNECTION_TIMEOUT
+		self.timeout = SERVER_CONNECTION_TIMEOUT
 
 
 class Sessions(object):
