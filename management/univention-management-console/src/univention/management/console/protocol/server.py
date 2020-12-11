@@ -880,6 +880,9 @@ class Server(object):
 		except (ValueError, resource.error) as exc:
 			CORE.error('Could not raise NOFILE resource limits: %s' % (exc,))
 
+		with open('/run/umc-server.pid', 'w') as fd:
+			fd.write(str(os.getpid()))
+
 		application = Application(serve_traceback=ucr.is_true('umc/http/show_tracebacks', True))
 		server = HTTPServer(
 			application,
