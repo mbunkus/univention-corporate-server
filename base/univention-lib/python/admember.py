@@ -52,11 +52,14 @@ import six
 if not six.PY2:
 	import ldb
 	from samba.dcerpc import nbt, security
+	from samba.dcerpc.security import DOMAIN_RID_ADMINS, DOMAIN_RID_ADMINISTRATOR
 	from samba.ndr import ndr_unpack
 	from samba.net import Net
 	from samba.param import LoadParm
 else:
 	from collections import namedtuple
+	DOMAIN_RID_ADMINS = 512
+	DOMAIN_RID_ADMINISTRATOR = 500
 
 import univention.config_registry
 import univention.uldap
@@ -252,6 +255,8 @@ def flush_nscd_hosts_cache():
 
 
 def decode_sid(value):
+	if six.PY3:
+		return ndr_unpack(security.dom_sid, value)
 	# SID in AD
 	#
 	#   | Byte 1         | Byte 2-7           | Byte 9-12                | Byte 13-16 |
@@ -359,10 +364,7 @@ def check_ad_account(ad_domain_info, username, password, ucr=None):
 		ud.debug(ud.MODULE, ud.ERROR, msg)
 		raise connectionFailed(msg)
 
-	if six.PY3:
-		domain_sid = ndr_unpack(security.dom_sid, res[0][1]["objectSid"][0])
-	else:
-		domain_sid = decode_sid(res[0][1]["objectSid"][0])
+	domain_sid = decode_sid(res[0][1]["objectSid"][0])
 
 	res = lo_ad.search(filter=filter_format("(sAMAccountName=%s)", [username]), attr=["objectSid", "primaryGroupID"])
 	if not res or "objectSid" not in res[0][1]:
@@ -370,24 +372,20 @@ def check_ad_account(ad_domain_info, username, password, ucr=None):
 		ud.debug(ud.MODULE, ud.ERROR, msg)
 		raise connectionFailed(msg)
 
+	user_sid = decode_sid(res[0][1]["objectSid"][0])
+	admin_sid = u"%s-%d" % (domain_sid, security.DOMAIN_RID_ADMINISTRATOR)
+	admins_sid = "%s-%d" % (domain_sid, security.DOMAIN_RID_ADMINS)
 	if six.PY3:
-		user_sid = ndr_unpack(security.dom_sid, res[0][1]["objectSid"][0])
-		if user_sid == security.dom_sid(u"%s-%d" % (domain_sid, security.DOMAIN_RID_ADMINISTRATOR)):
-			ud.debug(ud.MODULE, ud.PROCESS, "User is default AD Administrator")
-			return True
+		admin_sid = security.dom_sid(admin_sid)
+		admins_sid = security.dom_sid(admins_sid)
 
-		if int(res[0][1]["primaryGroupID"][0]) == security.DOMAIN_RID_ADMINS:
-			ud.debug(ud.MODULE, ud.PROCESS, "User is primary member of Domain Admins")
-			return False
-	else:
-		user_sid = decode_sid(res[0][1]["objectSid"][0])
-		if user_sid == "%s-500" % domain_sid:
-			ud.debug(ud.MODULE, ud.PROCESS, "User is default AD Administrator")
-			return True
+	if user_sid == admin_sid:
+		ud.debug(ud.MODULE, ud.PROCESS, "User is default AD Administrator")
+		return True
 
-		if int(res[0][1]["primaryGroupID"][0]) == 512:
-			ud.debug(ud.MODULE, ud.PROCESS, "User is primary member of Domain Admins")
-			return False
+	if int(res[0][1]["primaryGroupID"][0]) == DOMAIN_RID_ADMINS:
+		ud.debug(ud.MODULE, ud.PROCESS, "User is primary member of Domain Admins")
+		return False
 
 	user_dn = res[0][0]
 
@@ -401,14 +399,9 @@ def check_ad_account(ad_domain_info, username, password, ucr=None):
 		raise notDomainAdminInAD()
 
 	for group_sid_ndr in res[0][1]["tokenGroups"]:
-		if six.PY3:
-			group_sid = ndr_unpack(security.dom_sid, group_sid_ndr)
-			if group_sid == security.dom_sid("%s-%d" % (domain_sid, security.DOMAIN_RID_ADMINS)):
-				return False
-		else:
-			group_sid = decode_sid(group_sid_ndr)
-			if group_sid == "%s-512" % domain_sid:
-				return False
+		group_sid = decode_sid(group_sid_ndr)
+		if group_sid == admins_sid:
+			return False
 	else:
 		ud.debug(ud.MODULE, ud.ERROR, "User is not member of Domain Admins")
 		raise notDomainAdminInAD()
@@ -444,10 +437,7 @@ def _dn_of_udm_domain_admins(lo=None, ucr=None):
 		ucr.load()
 
 	ucs_domain_sid = _sid_of_ucs_sambadomain(lo, ucr)
-	if six.PY3:
-		domain_admins_sid = "%s-%d" % (ucs_domain_sid, security.DOMAIN_RID_ADMINS)
-	else:
-		domain_admins_sid = "%s-512" % ucs_domain_sid
+	domain_admins_sid = "%s-%d" % (ucs_domain_sid, DOMAIN_RID_ADMINS)
 	res = lo.searchDn(filter=filter_format("(sambaSID=%s)", [domain_admins_sid]), unique=True)
 	if not res:
 		ud.debug(ud.MODULE, ud.ERROR, "Failed to determine DN of UCS Domain Admins group")
@@ -488,10 +478,7 @@ def _ucs_sid_is_well_known_administrator(user_sid, lo=None, ucr=None):
 		ucr.load()
 
 	ucs_domain_sid = _sid_of_ucs_sambadomain(lo, ucr)
-	if six.PY3:
-		administrator_sid = "%s-%d" % (ucs_domain_sid, security.DOMAIN_RID_ADMINISTRATOR)
-	else:
-		administrator_sid = "%s-500" % ucs_domain_sid
+	administrator_sid = "%s-%d" % (ucs_domain_sid, DOMAIN_RID_ADMINISTRATOR)
 	if user_sid == administrator_sid:
 		return True
 	return False
@@ -776,13 +763,13 @@ def remove_install_univention_samba(info_handler=info_handler, step_handler=None
 
 
 SAMBA_TOOL_FIELDNAMES_TO_CLDAP_RES = {
-'Forest': 'forest',
-'Domain': 'dns_domain',
-'Netbios domain': 'domain_name',
-'DC name': 'pdc_dns_name',
-'DC netbios name': 'pdc_name',
-'Server site': 'server_site',
-'Client site': 'client_site'
+	'Forest': 'forest',
+	'Domain': 'dns_domain',
+	'Netbios domain': 'domain_name',
+	'DC name': 'pdc_dns_name',
+	'DC netbios name': 'pdc_name',
+	'Server site': 'server_site',
+	'Client site': 'client_site'
 }
 
 
@@ -808,7 +795,7 @@ def cldap_finddc(ip, use_samba_lib=six.PY3):
 			try:
 				res[SAMBA_TOOL_FIELDNAMES_TO_CLDAP_RES[fieldname]] = value.lstrip()
 			except KeyError:
-				pass  ## Unknown field, output may have changed
+				pass  # Unknown field, output may have changed
 
 		for fieldname, key in list(SAMBA_TOOL_FIELDNAMES_TO_CLDAP_RES.items()):
 			if key not in res:
@@ -1082,10 +1069,7 @@ def rename_well_known_sid_objects(username, password, ucr=None):
 	lo = univention.uldap.getMachineConnection()
 	ucs_domain_sid = _sid_of_ucs_sambadomain(lo, ucr)
 
-	if six.PY3:
-		domain_admins_sid = "%s-%d" % (ucs_domain_sid, security.DOMAIN_RID_ADMINS)
-	else:
-		domain_admins_sid = "%s-512" % ucs_domain_sid
+	domain_admins_sid = "%s-%d" % (ucs_domain_sid, DOMAIN_RID_ADMINS)
 	res = lo.search(filter=filter_format("(&(sambaSID=%s)(objectClass=sambaGroupMapping))", [domain_admins_sid]), attr=["cn"], unique=True)
 	if not res or "cn" not in res[0][1]:
 		ud.debug(ud.MODULE, ud.ERROR, "Lookup of group name for Domain Admins sid failed")
