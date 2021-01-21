@@ -1333,7 +1333,8 @@ class AD_Takeover(object):
 			for attr in ("mail", "proxyAddresses"):
 				if attr in msg:
 					for address in msg[attr]:
-						char_idx = address.decode('UTF-8').find("@")
+						address = address.decode('UTF-8').find("@")
+						char_idx = address.find("@")
 						if char_idx != -1:
 							domainpart = address[char_idx + 1:].lower()
 							# if not domainpart.endswith(".local"): ## We need to create all the domains. Alternatively set:
@@ -2438,8 +2439,8 @@ def takeover_hasInstantiatedNCs(ucr, samdb, ad_server_name, sitename):
 
 		# and note the msDS-hasMasterNCs values for fsmo takeover
 		if "msDS-hasMasterNCs" in obj:
-			for partitionDN in obj["msDS-hasMasterNCs"]:
-				partitions.append(partitionDN)
+			for partition_dn_utf8 in obj["msDS-hasMasterNCs"]:
+				partitions.append(partition_dn_utf8)
 	return partitions
 
 
@@ -2447,29 +2448,29 @@ def takeover_hasMasterNCs(ucr, samdb, sitename, partitions):
 	msg = samdb.search(base="CN=NTDS Settings,CN=%s,CN=Servers,CN=%s,CN=Sites,CN=Configuration,%s" % (escape_dn_chars(ucr["hostname"]), escape_dn_chars(sitename), samdb.domain_dn()), scope=samba.ldb.SCOPE_BASE, attrs=["hasPartialReplicaNCs", "msDS-hasMasterNCs"])
 	if msg:
 		obj = msg[0]
-		for partitionDN in partitions:
-			partition_name = partitionDN.decode('UTF-8')
-			if "hasPartialReplicaNCs" in obj and partitionDN in obj["hasPartialReplicaNCs"]:
-				log.debug("Removing hasPartialReplicaNCs on %s for %s" % (ucr["hostname"], partition_name))
+		for partition_dn_utf8 in partitions:
+			partition_dn = partition_dn_utf8.decode('UTF-8')
+			if "hasPartialReplicaNCs" in obj and partition_dn_utf8 in obj["hasPartialReplicaNCs"]:
+				log.debug("Removing hasPartialReplicaNCs on %s for %s" % (ucr["hostname"], partition_dn))
 				delta = ldb.Message()
 				delta.dn = obj.dn
-				delta["hasPartialReplicaNCs"] = ldb.MessageElement(partitionDN, ldb.FLAG_MOD_DELETE, "hasPartialReplicaNCs")
+				delta["hasPartialReplicaNCs"] = ldb.MessageElement(partition_dn_utf8, ldb.FLAG_MOD_DELETE, "hasPartialReplicaNCs")
 				try:
 					samdb.modify(delta)
 				except:
-					log.debug("Failed to remove hasPartialReplicaNCs %s from %s" % (partition_name, ucr["hostname"]))
+					log.debug("Failed to remove hasPartialReplicaNCs %s from %s" % (partition_dn, ucr["hostname"]))
 					log.debug("Current NTDS object: %s" % obj)
 
-			if "msDS-hasMasterNCs" in obj and partitionDN in obj["msDS-hasMasterNCs"]:
-				log.debug("Naming context %s already registered in msDS-hasMasterNCs for %s" % (partition_name, ucr["hostname"]))
+			if "msDS-hasMasterNCs" in obj and partition_dn_utf8 in obj["msDS-hasMasterNCs"]:
+				log.debug("Naming context %s already registered in msDS-hasMasterNCs for %s" % (partition_dn, ucr["hostname"]))
 			else:
 				delta = ldb.Message()
 				delta.dn = obj.dn
-				delta[partition_name] = ldb.MessageElement(partitionDN, ldb.FLAG_MOD_ADD, "msDS-hasMasterNCs")
+				delta[partition_dn] = ldb.MessageElement(partition_dn_utf8, ldb.FLAG_MOD_ADD, "msDS-hasMasterNCs")
 				try:
 					samdb.modify(delta)
 				except:
-					log.debug("Failed to add msDS-hasMasterNCs %s to %s" % (partition_name, ucr["hostname"]))
+					log.debug("Failed to add msDS-hasMasterNCs %s to %s" % (partition_dn, ucr["hostname"]))
 					log.debug("Current NTDS object: %s" % obj)
 
 
@@ -2502,9 +2503,8 @@ def add_servicePrincipals(ucr, secretsdb, spn_list):
 		delta = ldb.Message()
 		delta.dn = obj.dn
 		for spn in spn_list:
-			spn_utf8 = spn.encode('UTF-8')
-			if "servicePrincipalName" not in obj or spn_utf8 not in obj["servicePrincipalName"]:
-				delta[spn_utf8] = ldb.MessageElement(spn, ldb.FLAG_MOD_ADD, "servicePrincipalName")
+			if "servicePrincipalName" not in obj or spn.encode('UTF-8') not in obj["servicePrincipalName"]:
+				delta[spn] = ldb.MessageElement(spn, ldb.FLAG_MOD_ADD, "servicePrincipalName")
 		secretsdb.modify(delta)
 
 
