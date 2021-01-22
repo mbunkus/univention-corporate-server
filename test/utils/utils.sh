@@ -91,6 +91,7 @@ jenkins_updates () {
 	[ -z "$target" ] && target="$(echo "${JOB_NAME:-}"|sed -rne 's,^UCSschool-([0-9]+\.[0-9]+)/.*,\1-99,p')"
 
 	if [ $(ucr get version/version) = "4.4" ]; then
+		apt-get install -y patch
 		patch -p 1 -d / -i /root/0001-Upgrade.patch || exit $?
 	fi
 

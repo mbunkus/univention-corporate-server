@@ -114,11 +114,10 @@ index ab43bbaa47..8e3eba9466 100755
  from univention.updater.locking import UpdaterLock
  from univention.updater.commands import cmd_update, cmd_dist_upgrade
  
-@@ -538,8 +538,10 @@ def main():
-     add_temporary_sources_list(updater.release_update_temporary_sources_list(nextversion))
-     try:
+@@ -567,7 +567,10 @@
          phase = 'preup'
--
+         update_status(phase='PREUP')
+ 
 -        rel = updater._iterate_version_repositories(new_version, new_version, ('maintained',), [])
 +        if new_version.major > 4 and new_version.minor == 0 and new_version.patchlevel == 0:
 +            rel = [(updater.server, UCSRepoPoolUCS500(major=new_version.major, minor=new_version.minor, patchlevel=new_version.patchlevel))]
@@ -127,6 +126,3 @@ index ab43bbaa47..8e3eba9466 100755
  
          components = updater.get_components()
          # components = filter(lambda c: 'current' in ucr.get('repository/online/component/%s/version' % c, '').split(','), components)
--- 
-2.25.1
-
