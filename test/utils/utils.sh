@@ -90,15 +90,19 @@ jenkins_updates () {
 	# Update UCS@school instances always to latest patchlevel version
 	[ -z "$target" ] && target="$(echo "${JOB_NAME:-}"|sed -rne 's,^UCSschool-([0-9]+\.[0-9]+)/.*,\1-99,p')"
 
-	if [ $(ucr get version/version) = "4.4" ] && [ -e "/root/0001-Upgrade.patch" ]; then
+	test -n "$TARGET_VERSION" && target="$TARGET_VERSION"
+	test -n "$RELEASE_UPDATE" && release_update="$RELEASE_UPDATE"
+	test -n "$ERRATA_UPDATE" && errata_update="$ERRATA_UPDATE"
+
+	if [ "$target" = "5.0" ] && [ $(ucr get version/version) = "4.4" ] && [ -e "/root/0001-Upgrade.patch" ]; then
+		[ $(ucr get version/version) = "4.4" ] && echo -e "deb [trusted=yes] http://omar.knut.univention.de/build2/ ucs_5.0-0/all/" >> /etc/apt/sources.list
+		[ $(ucr get version/version) = "4.4" ] && echo -e "deb [trusted=yes] http://omar.knut.univention.de/build2/ ucs_5.0-0/\$(ARCH)/" >> /etc/apt/sources.list
+		[ $(ucr get version/version) = "4.4" ] && echo -e "deb [trusted=yes] http://omar.knut.univention.de/build2/ ucs_5.0-0-fbest-5.0/all/" >> /etc/apt/sources.list
+		[ $(ucr get version/version) = "4.4" ] && echo -e "deb [trusted=yes] http://omar.knut.univention.de/build2/ ucs_5.0-0-fbest-5.0/\$(ARCH)/" >> /etc/apt/sources.list
 		apt-get install -y patch
 		patch -p 1 -d / -i /root/0001-Upgrade.patch || exit $?
 		rm -f /root/0001-Upgrade.patch
 	fi
-
-	test -n "$TARGET_VERSION" && target="$TARGET_VERSION"
-	test -n "$RELEASE_UPDATE" && release_update="$RELEASE_UPDATE"
-	test -n "$ERRATA_UPDATE" && errata_update="$ERRATA_UPDATE"
 
 	eval "$(ucr shell '^version/(version|patchlevel|erratalevel)$')"
 	echo "Starting from ${version_version}-${version_patchlevel}+${version_erratalevel} to ${target}..."
