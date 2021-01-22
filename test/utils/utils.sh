@@ -90,6 +90,10 @@ jenkins_updates () {
 	# Update UCS@school instances always to latest patchlevel version
 	[ -z "$target" ] && target="$(echo "${JOB_NAME:-}"|sed -rne 's,^UCSschool-([0-9]+\.[0-9]+)/.*,\1-99,p')"
 
+	if [ $(ucr get version/version) = "4.4" ]; then
+		patch -p 1 -d / -i /root/0001-Upgrade.patch || exit $?
+	fi
+
 	test -n "$TARGET_VERSION" && target="$TARGET_VERSION"
 	test -n "$RELEASE_UPDATE" && release_update="$RELEASE_UPDATE"
 	test -n "$ERRATA_UPDATE" && errata_update="$ERRATA_UPDATE"
