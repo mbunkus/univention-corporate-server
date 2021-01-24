@@ -730,7 +730,7 @@ class AD_Connection(object):
 			expression="(&(objectCategory=user)(objectClass=user))",
 			attrs=["sAMAccountName", "objectSid"], controls=controls)
 		for obj in msgs:
-			sAMAccountName = obj["sAMAccountName"][0]
+			sAMAccountName = obj["sAMAccountName"][0].decode('UTF-8')
 
 			# identify well known names, abstracting from locale
 			sambaSID = str(ndr_unpack(security.dom_sid, obj["objectSid"][0]))
@@ -754,7 +754,7 @@ class AD_Connection(object):
 			expression="(objectCategory=group)",
 			attrs=["sAMAccountName", "objectSid"], controls=controls)
 		for obj in msgs:
-			sAMAccountName = obj["sAMAccountName"][0]
+			sAMAccountName = obj["sAMAccountName"][0].decode('UTF-8')
 
 			# identify well known names, abstracting from locale
 			sambaSID = str(ndr_unpack(security.dom_sid, obj["objectSid"][0]))
@@ -773,7 +773,7 @@ class AD_Connection(object):
 			expression="(objectCategory=computer)",
 			attrs=["sAMAccountName", "objectSid"], controls=controls)
 		for obj in msgs:
-			sAMAccountName = obj["sAMAccountName"][0]
+			sAMAccountName = obj["sAMAccountName"][0].decode('UTF-8')
 
 			# identify well known names, abstracting from locale
 			sambaSID = str(ndr_unpack(security.dom_sid, obj["objectSid"][0]))
@@ -1180,7 +1180,7 @@ class AD_Takeover(object):
 		msgs = self.samdb.search(
 			base=self.ucr["samba4/ldap/base"], scope=samba.ldb.SCOPE_SUBTREE,
 			expression="(objectClass=organizationalunit)",
-			attrs=["dn"])
+			attrs=[])
 		if msgs:
 			log.debug("Creating OUs in the Univention Directory Manager")
 		for obj in msgs:
@@ -1224,6 +1224,7 @@ class AD_Takeover(object):
 
 			obj = msgs[0]
 			ad_object_name = obj.get("sAMAccountName", [b''])[0].decode('UTF-8')
+			log.debug("Found Well known SID %s: %s" % (sid, ad_object_name))
 			oc = obj["objectClass"]
 
 			if not ad_object_name:
@@ -1239,9 +1240,9 @@ class AD_Takeover(object):
 			ucssid = sid.replace(self.ad_domainsid, self.old_domainsid, 1)
 			ldap_result = self.lo.search(filter=filter_format("(sambaSID=%s)", (ucssid,)), attr=["sambaSID", "uid", "cn"])
 			if len(ldap_result) == 1:
-				if "group" in oc or "foreignSecurityPrincipal" in oc:
+				if b"group" in oc or b"foreignSecurityPrincipal" in oc:
 					ucsldap_object_name = ldap_result[0][1].get("cn", [b''])[0].decode('UTF-8')
-				elif "user" in oc:
+				elif b"user" in oc:
 					ucsldap_object_name = ldap_result[0][1].get("uid", [b''])[0].decode('UTF-8')
 			elif len(ldap_result) > 0:
 				log.error('Error: Found more than one object with sambaSID=%s' % (sid,))
@@ -1252,9 +1253,9 @@ class AD_Takeover(object):
 				continue
 
 			if ad_object_name.lower() != ucsldap_object_name.lower():
-				if "group" in oc or "foreignSecurityPrincipal" in oc:
+				if b"group" in oc or b"foreignSecurityPrincipal" in oc:
 					groupRenameHandler.rename_ucs_group(ucsldap_object_name, ad_object_name)
-				elif "user" in oc:
+				elif b"user" in oc:
 					userRenameHandler.rename_ucs_user(ucsldap_object_name, ad_object_name)
 
 		# construct dict of old UCS sambaSIDs
@@ -1416,7 +1417,7 @@ class AD_Takeover(object):
 		run_and_output_to_log(["univention-config-registry", "set", "connector/s4/poll/sleep=1", "connector/s4/retryrejected=2"], log.debug)
 
 		# turn off the legacy position_mapping:
-		run_and_output_to_log(["univention-config-registry", "unset", "connector/s4/mapping/dns/position"], log.debug)
+		run_and_output_to_log(["univention-config-registry", "unset", "connector/s4/listener/disabled", "connector/s4/mapping/dns/position"], log.debug)
 
 		# rotate S4 connector log and start the S4 Connector
 		# careful: the postrotate task used to "restart" the connector!
@@ -1905,10 +1906,10 @@ def check_gpo_presence():
 	sysvol_dir = "/var/lib/samba/sysvol"
 	default_policies_dir = os.path.join(sysvol_dir, samdb.domain_dns_name(), "Policies")
 	for obj in msgs:
-		name = obj["cn"][0]
+		name = obj["cn"][0].decode('UTF-8')
 		if "gPCFileSysPath" in obj:
 			try:
-				[server, share, subdir] = parse_unc(obj["gPCFileSysPath"][0])
+				[server, share, subdir] = parse_unc(obj["gPCFileSysPath"][0].decode('UTF8'))
 				gpo_path = os.path.join(sysvol_dir, subdir.replace('\\', '/'))
 			except ValueError as ex:
 				log.error(ex.args[0])
@@ -1920,13 +1921,13 @@ def check_gpo_presence():
 			raise SysvolGPOMissing()
 
 		if "versionNumber" in obj:
-			gpcversion = obj["versionNumber"][0]
+			gpcversion = int(obj["versionNumber"][0])
 			config = configparser.ConfigParser()
 			try:
 				with open(os.path.join(gpo_path, 'GPT.INI')) as f:
 					try:
 						config.readfp(f)
-						fileversion = config.get('General', 'version')
+						fileversion = int(config.get('General', 'version'))
 						if fileversion < gpcversion:
 							log.error("File version %s of GPO %s is lower than GPO container versionNumber (%s)" % (fileversion, name, gpcversion))
 							raise SysvolGPOVersionTooLow(_("At least one GPO in SYSVOL is not up to date yet."))
