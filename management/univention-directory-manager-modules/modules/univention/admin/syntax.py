@@ -5250,6 +5250,25 @@ __register_choice_update_function(Country.update_choices)
 Country.update_choices()
 
 
+class Syntax(combobox):
+	"""
+	Syntax class for Extended Attributes.
+	"""
+	choices = []  # type: List[Tuple[str, str]]
+
+	@classmethod
+	def update_choices(cls):
+		mod = sys.modules[__name__]
+		cls.choices = sorted(
+			(sym, sym)
+			for sym, obj in ((sym, getattr(mod, sym)) for sym in dir(mod))
+			if isinstance(obj, type) and issubclass(obj, ISyntax)
+		)
+
+
+__register_choice_update_function(Syntax.update_choices)
+
+
 if __name__ == '__main__':
 	import doctest
 	doctest.testmod()
