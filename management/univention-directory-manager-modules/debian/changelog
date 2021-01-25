@@ -1,5 +1,6 @@
 univention-directory-manager-modules (14.0.20-19) unstable; urgency=low
 
+  * Bug #31857: Make LDAP Object Class and Attribute names selectable
   * Bug #52683: Add syntax class to select syntax class for EA
   * Bug #25054: Make options in extended attributes selectable
 
