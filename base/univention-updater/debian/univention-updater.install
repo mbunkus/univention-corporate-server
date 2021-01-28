@@ -1,6 +1,7 @@
 python/univention-upgrade usr/sbin/
 python/univention-updater usr/share/univention-updater/
 python/univention-actualise usr/share/univention-updater/
+python/list-installed-unmaintained-packages.py usr/share/univention-updater/
 python/univention-repository-create usr/sbin/
 python/univention-repository-update usr/sbin/
 
