@@ -35,12 +35,14 @@ is_ec2 () {
 }
 
 basic_setup () {
-	[ $(ucr get version/version) = "5.0" ] && echo -e "deb [trusted=yes] http://omar.knut.univention.de/build2/ ucs_5.0-0/all/" >> /etc/apt/sources.list
-	[ $(ucr get version/version) = "5.0" ] && echo -e "deb [trusted=yes] http://omar.knut.univention.de/build2/ ucs_5.0-0/\$(ARCH)/" >> /etc/apt/sources.list
-	[ $(ucr get version/version) = "5.0" ] && echo -e "deb [trusted=yes] http://omar.knut.univention.de/build2/ ucs_5.0-0-fbest-5.0/all/" >> /etc/apt/sources.list
-	[ $(ucr get version/version) = "5.0" ] && echo -e "deb [trusted=yes] http://omar.knut.univention.de/build2/ ucs_5.0-0-fbest-5.0/\$(ARCH)/" >> /etc/apt/sources.list
-	rdate time.fu-berlin.de || true
-	apt-get update -qq
+	if host omar.knut.univention.de > /dev/null 2>&1; then
+		[ $(ucr get version/version) = "5.0" ] && echo -e "deb [trusted=yes] http://omar.knut.univention.de/build2/ ucs_5.0-0/all/" >> /etc/apt/sources.list
+		[ $(ucr get version/version) = "5.0" ] && echo -e "deb [trusted=yes] http://omar.knut.univention.de/build2/ ucs_5.0-0/\$(ARCH)/" >> /etc/apt/sources.list
+		[ $(ucr get version/version) = "5.0" ] && echo -e "deb [trusted=yes] http://omar.knut.univention.de/build2/ ucs_5.0-0-fbest-5.0/all/" >> /etc/apt/sources.list
+		[ $(ucr get version/version) = "5.0" ] && echo -e "deb [trusted=yes] http://omar.knut.univention.de/build2/ ucs_5.0-0-fbest-5.0/\$(ARCH)/" >> /etc/apt/sources.list
+		rdate time.fu-berlin.de || true
+		apt-get update -qq
+	fi
 	# force dpkg not to call "sync" during package installations/updates
 	echo force-unsafe-io > /etc/dpkg/dpkg.cfg.d/force-unsafe-io
 	if grep "QEMU Virtual CPU" /proc/cpuinfo ; then
@@ -95,10 +97,12 @@ jenkins_updates () {
 	test -n "$ERRATA_UPDATE" && errata_update="$ERRATA_UPDATE"
 
 	if [ "$target" = "5.0" ] && [ $(ucr get version/version) = "4.4" ] && [ -e "/root/0001-Upgrade.patch" ]; then
-		[ $(ucr get version/version) = "4.4" ] && echo -e "deb [trusted=yes] http://omar.knut.univention.de/build2/ ucs_5.0-0/all/" >> /etc/apt/sources.list
-		[ $(ucr get version/version) = "4.4" ] && echo -e "deb [trusted=yes] http://omar.knut.univention.de/build2/ ucs_5.0-0/\$(ARCH)/" >> /etc/apt/sources.list
-		[ $(ucr get version/version) = "4.4" ] && echo -e "deb [trusted=yes] http://omar.knut.univention.de/build2/ ucs_5.0-0-fbest-5.0/all/" >> /etc/apt/sources.list
-		[ $(ucr get version/version) = "4.4" ] && echo -e "deb [trusted=yes] http://omar.knut.univention.de/build2/ ucs_5.0-0-fbest-5.0/\$(ARCH)/" >> /etc/apt/sources.list
+		if host omar.knut.univention.de > /dev/null 2>&1; then
+			[ $(ucr get version/version) = "4.4" ] && echo -e "deb [trusted=yes] http://omar.knut.univention.de/build2/ ucs_5.0-0/all/" >> /etc/apt/sources.list
+			[ $(ucr get version/version) = "4.4" ] && echo -e "deb [trusted=yes] http://omar.knut.univention.de/build2/ ucs_5.0-0/\$(ARCH)/" >> /etc/apt/sources.list
+			[ $(ucr get version/version) = "4.4" ] && echo -e "deb [trusted=yes] http://omar.knut.univention.de/build2/ ucs_5.0-0-fbest-5.0/all/" >> /etc/apt/sources.list
+			[ $(ucr get version/version) = "4.4" ] && echo -e "deb [trusted=yes] http://omar.knut.univention.de/build2/ ucs_5.0-0-fbest-5.0/\$(ARCH)/" >> /etc/apt/sources.list
+		fi
 		apt-get install -y patch
 		patch -p 1 -d / -i /root/0001-Upgrade.patch || exit $?
 		rm -f /root/0001-Upgrade.patch
