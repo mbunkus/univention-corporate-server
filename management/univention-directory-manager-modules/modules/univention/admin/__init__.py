@@ -39,6 +39,7 @@ import unicodedata
 
 import six
 from ldap.filter import filter_format
+import unidecode
 
 import univention.config_registry
 import univention.debug as ud
@@ -133,9 +134,7 @@ def pattern_replace(pattern, object):
 			elif iCmd == 'umlauts':
 				if isinstance(text, bytes):
 					text = text.decode('UTF-8')
-				for umlaut, code in property.UMLAUTS.items():
-					text = text.replace(umlaut, code)
-
+				text = unidecode.unidecode(text)
 				text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('ascii')
 			elif iCmd == 'alphanum':
 				whitelist = configRegistry.get('directory/manager/templates/alphanum/whitelist', '')
@@ -191,70 +190,6 @@ def pattern_replace(pattern, object):
 
 
 class property:
-	UMLAUTS = {
-		u'À': u'A',
-		u'Á': u'A',
-		u'Â': u'A',
-		u'Ã': u'A',
-		u'Ä': u'Ae',
-		u'Å': u'A',
-		u'Æ': u'AE',
-		u'Ç': u'C',
-		u'È': u'E',
-		u'É': u'E',
-		u'Ê': u'E',
-		u'Ë': u'E',
-		u'Ì': u'I',
-		u'Í': u'I',
-		u'Î': u'I',
-		u'Ï': u'I',
-		u'Ð': u'D',
-		u'Ñ': u'N',
-		u'Ò': u'O',
-		u'Ó': u'O',
-		u'Ô': u'O',
-		u'Õ': u'O',
-		u'Ö': u'Oe',
-		u'Ø': u'O',
-		u'Ù': u'U',
-		u'Ú': u'U',
-		u'Û': u'U',
-		u'Ü': u'Ue',
-		u'Ý': u'Y',
-		u'Þ': u'P',
-		u'ß': u'ss',
-		u'à': u'a',
-		u'á': u'a',
-		u'â': u'a',
-		u'ã': u'a',
-		u'ä': u'ae',
-		u'å': u'a',
-		u'æ': u'ae',
-		u'ç': u'c',
-		u'è': u'e',
-		u'é': u'e',
-		u'ê': u'e',
-		u'ë': u'e',
-		u'ì': u'i',
-		u'í': u'i',
-		u'î': u'i',
-		u'ï': u'i',
-		u'ð': u'o',
-		u'ñ': u'n',
-		u'ò': u'o',
-		u'ó': u'o',
-		u'ô': u'o',
-		u'õ': u'o',
-		u'ö': u'oe',
-		u'ø': u'o',
-		u'ù': u'u',
-		u'ú': u'u',
-		u'û': u'u',
-		u'ü': u'ue',
-		u'ý': u'y',
-		u'þ': u'p',
-		u'ÿ': u'y'
-	}
 
 	def __init__(
 		self,
