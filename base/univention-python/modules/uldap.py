@@ -33,6 +33,7 @@
 import re
 from functools import wraps
 import random
+import collections
 
 import six
 import ldap
@@ -686,7 +687,7 @@ class access(object):
 			vals = nal.setdefault(key, set())
 			vals |= set(val)
 
-		nal = self.__encode_entry([(k, list(v)) for k, v in nal.items()])
+		nal = self.__encode_entry([(k, list(collections.OrderedDict.fromkeys(v))) for k, v in nal.items()])
 
 		try:
 			rtype, rdata, rmsgid, resp_ctrls = self.lo.add_ext_s(dn, nal, serverctrls=serverctrls)
@@ -738,7 +739,7 @@ class access(object):
 					val = None
 			else:
 				continue
-			ml.append((op, key, val))
+			ml.append((op, key, list(collections.OrderedDict.fromkeys(val)) if isinstance(val, (list, tuple)) else val))
 		ml = self.__encode_entry(ml)
 
 		# check if we need to rename the object
