@@ -1,3 +1,10 @@
+univention-directory-manager-modules (14.0.20-19) unstable; urgency=medium
+
+  * Bug #53513: fix types definition for complex syntaxes without
+    subsyntax_key_value
+
+ -- Florian Best <best@univention.de>  Fri, 10 Sep 2021 17:43:39 +0200
+
 univention-directory-manager-modules (14.0.20-18) unstable; urgency=medium
 
   * Bug #53675: remove default value for accountActivationDate
