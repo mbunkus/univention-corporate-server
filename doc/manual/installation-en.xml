@@ -546,11 +546,6 @@ see <xref linkend="installation-overview"/>.
 		The process for setting up a UCS instance in Citrix XenServer is
 		documented in the Univention Wiki <biblioref linkend="xenserver-installation"/>.
 	</para>
-
-	<para>
-	  To display the GRUB menu correctly, an adaption to the XenServer configuration is necessary;
-	  this is described in <xref linkend="release-notes"/>.
-	</para>
 </section>
 </chapter>
 <!-- vim: set softtabstop=2 tabstop=2 shiftwidth=2 textwidth=80 noexpandtab : -->
