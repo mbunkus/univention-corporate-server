@@ -275,7 +275,7 @@ the size of the respective hard drive.
 	  </listitem>
 	  <listitem>
 		<simpara>
-		  <guimenu>Separate /home, /usr, /var and /tmp partition</guimenu>: In addition to a file system for <filename class="directory">/</filename>,  an additional file system is also created each for <filename class="directory">/home/</filename>, <filename class="directory">/usr/</filename>, /<filename class="directory">var/</filename> and <filename class="directory">/tmp/</filename>.
+		  <guimenu>Separate /home, /usr, /var and /tmp partition</guimenu>: In addition to a file system for <filename class="directory">/</filename>,  an additional file system is also created each for <filename class="directory">/home/</filename>, <filename class="directory">/usr/</filename>, <filename class="directory">/var/</filename> and <filename class="directory">/tmp/</filename>.
 		</simpara>
 	  </listitem>
 	</itemizedlist>
