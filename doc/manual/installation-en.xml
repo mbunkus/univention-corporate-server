@@ -78,7 +78,11 @@ Following installation on hardware or in a virtualization solution, UCS can also
 	<itemizedlist>
 		<listitem>
 			<simpara>
-			<guimenuitem>Start with default settings</guimenuitem> starts the interactive, graphic installation. During the installation, the system requests a number of parameters such as the network settings, hard drive partitions, domain settings and selection of software components for the UCS system to be installed and then performs the installation and the configuration.
+				<guimenuitem>Start with default settings</guimenuitem> starts the
+				interactive, graphic installation. During the installation, the system
+				requests a number of parameters such as the network settings, hard drive
+				partitions and domain settings for the UCS system to be installed and
+				then performs the installation and the configuration.
 			</simpara>
 		</listitem>
 		<listitem>
@@ -411,17 +415,6 @@ option can be disabled and the fully qualified domain name of the preferred &ucs
   </section>
 </section>
 
-<section id="installation:software">
-  <title>Selecting UCS software components</title>
-  <para>
-	The <guimenu>software configuration</guimenu> step offers the possibility of installing additional UCS components during the installation. The applications are also available after the installation via the Univention App Center in the <guimenu>UCS components</guimenu> category and can be installed and uninstalled there subsequently.
-  </para>
-	<figure id="installation-softwareselection">
-	  <title>Selecting UCS software components</title>
-	  <graphic scalefit="1" width="80%" align="center" fileref="illustrations50/installer-softwareselection_en.png"/>
-	</figure>
-</section>
-
 <section id="installation:overview">
   <title>Confirming the settings</title>
   <para>
@@ -560,3 +553,4 @@ see <xref linkend="installation-overview"/>.
 	</para>
 </section>
 </chapter>
+<!-- vim: set softtabstop=2 tabstop=2 shiftwidth=2 textwidth=80 noexpandtab : -->

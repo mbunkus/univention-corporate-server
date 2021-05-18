@@ -92,12 +92,12 @@
 	<itemizedlist>
 		<listitem>
 			<simpara>
-			<guimenuitem>Start with default settings</guimenuitem> startet die interaktive, graphische Installation
-			von UCS. Bei der
-			Installation fragt das System nach einigen Parametern wie
-			Netzwerkeinstellungen, Festplattenpartitionierung, Domäneneinstellungen und
-			Komponentenauswahl für das zu installierende UCS-System und führt anschließend
-			die Installation und Konfiguration durch.
+				<guimenuitem>Start with default settings</guimenuitem> startet die
+				interaktive, graphische Installation von UCS. Bei der Installation fragt
+				das System nach einigen Parametern wie Netzwerkeinstellungen,
+				Festplattenpartitionierung und Domäneneinstellungen für das zu
+				installierende UCS-System und führt anschließend die Installation und
+				Konfiguration durch.
 			</simpara>
 		</listitem>
 		<listitem>
@@ -547,20 +547,6 @@
   </section>
 </section>
 
-<section id="installation:software">
-  <title>Auswahl von UCS-Software-Komponenten</title>
-  <para>
-	Der Schritt <guimenu>Software-Konfiguration</guimenu> bietet die Möglichkeit bereits während der
-	Installation zusätzliche UCS-Komponenten zu installieren.  Diese stehen auch nach der Installation
-	über das Univention App Center in der Kategorie <guimenu>UCS-Komponenten</guimenu> zur Verfügung und
-	können dort nachträglich installiert und deinstalliert werden.
-  </para>
-	<figure id="installation-softwareselection">
-	  <title>Auswahl von UCS-Software-Komponenten</title>
-	  <graphic scalefit="1" width="80%" align="center" fileref="illustrations50/installer-softwareselection_de.png"/>
-	</figure>
-</section>
-
 <section id="installation:overview">
   <title>Bestätigen der Einstellungen</title>
   <para>
@@ -706,3 +692,4 @@
   </para>
 </section>
 </chapter>
+<!-- vim: set softtabstop=2 tabstop=2 shiftwidth=2 textwidth=80 noexpandtab : -->
