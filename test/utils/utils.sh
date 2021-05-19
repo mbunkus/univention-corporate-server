@@ -232,7 +232,7 @@ _fix_ssh47233 () { # Bug #47233: ssh connection stuck on reboot
 }
 
 run_setup_join () {
-	local srv rv=0
+	local rv=0
 	patch_setup_join # temp. remove me
 	set -o pipefail
 	/usr/lib/univention-system-setup/scripts/setup-join.sh ${1:+"$@"} | tee -a /var/log/univention/setup.log || rv=$?
