@@ -98,7 +98,13 @@ Following installation on hardware or in a virtualization solution, UCS can also
 			<itemizedlist>
 				<listitem>
 					<simpara>
-					<guimenuitem>Install in text mode</guimenuitem> performs an interactive standard installation in text mode. This is practical on systems which display problems with the graphic version of the installer.</simpara>
+					<guimenuitem>Start in text mode</guimenuitem> performs an interactive standard installation in text mode. This is practical on systems which display problems with the graphic version of the installer.</simpara>
+				</listitem>
+				<listitem>
+					<simpara>
+					<guimenuitem>Rescue mode</guimenuitem>
+					<!--TODO: describe rescue mode-->
+					</simpara>
 				</listitem>
 				<listitem>
 				  <simpara>
@@ -106,6 +112,12 @@ Following installation on hardware or in a virtualization solution, UCS can also
 				  </simpara>
 				</listitem>
 			</itemizedlist>
+		</listitem>
+		<listitem>
+			<simpara>
+				<guimenuitem>accessible dark contrast installer menu</guimenuitem>
+				<!--TODO: describe dark menus -->
+			</simpara>
 		</listitem>
 	</itemizedlist>
 	<para>

@@ -114,9 +114,15 @@
 			<itemizedlist>
 				<listitem>
 					<simpara>
-					<guimenuitem>Install in text mode</guimenuitem> führt eine interaktive
+					<guimenuitem>Start in text mode</guimenuitem> führt eine interaktive
 					Standardinstallation im Textmodus durch. Dies ist auf Systemen sinnvoll, die
 					Probleme mit der graphischen Variante des Installers zeigen.
+					</simpara>
+				</listitem>
+				<listitem>
+					<simpara>
+					<guimenuitem>Rescue mode</guimenuitem>
+					<!--TODO: Beschreibung der rescue mode-->
 					</simpara>
 				</listitem>
 				<listitem>
@@ -127,6 +133,12 @@
 				  </simpara>
 				</listitem>
 			</itemizedlist>
+		</listitem>
+		<listitem>
+			<simpara>
+				<guimenuitem>accessible dark contrast installer menu</guimenuitem>
+				<!--TODO: beschreibung des dark menus -->
+			</simpara>
 		</listitem>
 	</itemizedlist>
 	<para>
