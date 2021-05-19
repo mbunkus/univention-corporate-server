@@ -135,12 +135,14 @@ jenkins_updates () {
 }
 
 upgrade_to_latest_patchlevel () {
-	local updateto="$(ucr get version/version)-99"
+	local updateto
+	updateto="$(ucr get version/version)-99"
 	upgrade_to_latest --updateto "$updateto"
 }
 
 upgrade_to_latest_errata () {
-	local current="$(ucr get version/version)-$(ucr get version/patchlevel)"
+	local current
+	current="$(ucr get version/version)-$(ucr get version/patchlevel)"
 	upgrade_to_latest --updateto "$current"
 }
 
@@ -279,7 +281,8 @@ wait_for_reboot () {
 wait_for_replication () {
 	local timeout=${1:-3600}
 	local steps=${2:-10}
-	local timestamp=$(date +"%s")
+	local timestamp
+	timestamp=$(date +"%s")
 	echo "Waiting for replication..."
 	while ! /usr/lib/nagios/plugins/check_univention_replication; do
 		if [ $((timestamp+timeout)) -lt $(date +"%s") ]; then
@@ -745,10 +748,10 @@ assert_adconnector_configuration () {
 }
 
 assert_packages () {
-	local package
+	local package installed
 	for package in "$@"
 	do
-		local installed=$(dpkg-query -W -f '${status}' "$package")
+		installed=$(dpkg-query -W -f '${status}' "$package")
 		if [ "$installed" != "install ok installed" ]; then
 			create_DONT_START_UCS_TEST "Failed: package status of $package is $installed"
 			exit 1
@@ -758,7 +761,8 @@ assert_packages () {
 }
 
 set_administrator_dn_for_ucs_test () {
-	local dn="$(univention-ldapsearch sambaSid=*-500 -LLL dn | sed -ne 's|dn: ||p')"
+	local dn
+	dn="$(univention-ldapsearch sambaSid=*-500 -LLL dn | sed -ne 's|dn: ||p')"
 	ucr set tests/domainadmin/account="$dn"
 }
 
@@ -789,15 +793,16 @@ set_userpassword_for_administrator ()
 {
 	local password="$1"
 	local user="${2:-Administrator}"
+	local lb
+	lb="$(ucr get ldap/base)"
 
-	eval "$(ucr shell ldap/base)"
-
-	local passwordhash="$(mkpasswd -m sha-512 $password)"
-	echo "dn: uid=$user,cn=users,$ldap_base
+	local passwordhash
+	passwordhash="$(mkpasswd -m sha-512 $password)"
+	echo "dn: uid=$user,cn=users,$lb
 changetype: modify
 replace: userPassword
 userPassword: {crypt}$passwordhash
-" | ldapmodify -x -D "cn=admin,$ldap_base" -y /etc/ldap.secret
+" | ldapmodify -x -D "cn=admin,$lb" -y /etc/ldap.secret
 }
 
 
@@ -899,9 +904,9 @@ remove_apps_via_umc () {
 
 assert_app_is_installed_and_latest () {
 	univention-app info
-	local rv=0 app
+	local rv=0 app latest
 	for app in "$@"; do
-		local latest="$(python -m shared-utils/app-info -a $app -v)"
+		latest="$(python -m shared-utils/app-info -a $app -v)"
 		univention-app info | grep -q "Installed: .*\b$latest\b.*" || rv=$?
 	done
 	return $rv
@@ -1002,7 +1007,8 @@ dump_systemd_journal () {
 
 add_hostname_to_juint_results ()
 {
-	local hostname="$(hostname)"
+	local hostname
+	hostname="$(hostname)"
 	for f in test-reports/*/*.xml; do
 		sed -i "s| name=\"| name=\"${hostname}.|g;s|testcase classname=\"|testcase classname=\"${hostname}.|g" $f
 	done
