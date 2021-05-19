@@ -552,7 +552,7 @@ install_ucsschool () {
 
 remove_s4connector_tests_and_mark_tests_manual_installed () {
 	univention-remove --yes ucs-test-s4connector
-	apt-mark manual $(apt-mark showauto | grep ^ucs-test-)
+	apt-mark manual 'ucs-test-*'
 }
 
 install_ucs_windows_tools () {
@@ -582,6 +582,7 @@ run_minimal_tests () {
 	run_tests -s checks "$@"
 }
 
+# shellcheck disable=SC2120
 run_minimal_apptests () {
 	run_apptests -s checks -s appcenter "$@"
 }
@@ -947,6 +948,7 @@ run_app_appliance_tests () {
 	## install ucs-test from errata test
 	#/root/activate-errata-test-scope.sh
 	install_with_unmaintained ucs-test-appcenter ucs-test-checks || rv=$?
+	# shellcheck disable=SC2119
 	run_minimal_apptests || rv=$?
 	return $rv
 }
@@ -970,6 +972,7 @@ add_tech_key_authorized_keys() {
 }
 
 assert_admember_mode () {
+	# shellcheck disable=SC1091
 	. /usr/share/univention-lib/admember.sh
 	is_localhost_in_admember_mode
 }
@@ -1158,7 +1161,7 @@ transfer_docker_image () {
 	#while pgrep -a -f "univention-app internal-transfer-images.*$appid.*"
 	while pgrep -a -f "univention-app internal-transfer-images"
 	do
-		sleep "$(( $RANDOM % 60 ))"
+		sleep "$(( RANDOM % 60 ))"
 	done
 	ssh root@$docker_host univention-app update || return 1
 cat <<-EOF | ssh root@$docker_host python
