@@ -78,11 +78,8 @@ Following installation on hardware or in a virtualization solution, UCS can also
 	<itemizedlist>
 		<listitem>
 			<simpara>
-				<guimenuitem>Start with default settings</guimenuitem> starts the
-				interactive, graphic installation. During the installation, the system
-				requests a number of parameters such as the network settings, hard drive
-				partitions and domain settings for the UCS system to be installed and
-				then performs the installation and the configuration.
+				<guimenuitem>Start with default settings</guimenuitem> starts the interactive, graphic installation.
+				During the installation, the system requests a number of parameters such as the network settings, hard drive partitions and domain settings for the UCS system to be installed and then performs the installation and the configuration.
 			</simpara>
 		</listitem>
 		<listitem>
@@ -103,7 +100,7 @@ Following installation on hardware or in a virtualization solution, UCS can also
 				<listitem>
 					<simpara>
 					<guimenuitem>Rescue mode</guimenuitem>
-					<!--TODO: describe rescue mode-->
+					The rescue mode is there to recover systems unable to boot.
 					</simpara>
 				</listitem>
 				<listitem>
@@ -115,8 +112,8 @@ Following installation on hardware or in a virtualization solution, UCS can also
 		</listitem>
 		<listitem>
 			<simpara>
-				<guimenuitem>accessible dark contrast installer menu</guimenuitem>
-				<!--TODO: describe dark menus -->
+				<guimenuitem>Accessible dark contrast installer menu</guimenuitem>
+				allows to start the setup in a dark and contast rich mode.
 			</simpara>
 		</listitem>
 	</itemizedlist>
@@ -307,6 +304,14 @@ the size of the respective hard drive.
   <para>
 	Once the partitioning is complete, the UCS basic system and additional software is installed automatically. This can take some time depending on the speed of the hardware used. The system is then made ready to boot via the installation of the GRUB bootloader.
   </para>
+
+  <para>
+		<figure id="installation-reboot">
+			<title>Finish the installation</title>
+			<graphic scalefit="1" width="80%" align="center" fileref="illustrations50/installer-reboot_en.png"/>
+		</figure>
+		A restart into the freshly installed system follows subsequently in order to complete the cofiguration within it.
+  </para>
 </section>
 <section id="installation:Domäneneinstellungen">
   <title>Domain settings</title>
@@ -461,7 +466,7 @@ see <xref linkend="installation-overview"/>.
   </para>
   <para>
 	Completion of the configuration must be confirmed with the <guimenu>Finish</guimenu> button.
-	The UCS system is then prepared for the first booting procedure and restarted.
+	The UCS system is then prepared for the first full booting procedure and restarted.
   </para>
   <para>
 	The system will then boot from the hard drive. Following the boot procedure, the <systemitem class="username">root</systemitem> and <systemitem class="username">administrator</systemitem> users can log on via the web frontend &ucsUMC; (see <xref linkend="central:general"/>), which can be reached under the IP address set during the installation or the host name.
@@ -560,4 +565,3 @@ see <xref linkend="installation-overview"/>.
 	</para>
 </section>
 </chapter>
-<!-- vim: set softtabstop=2 tabstop=2 shiftwidth=2 textwidth=80 noexpandtab : -->

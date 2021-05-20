@@ -92,12 +92,8 @@
 	<itemizedlist>
 		<listitem>
 			<simpara>
-				<guimenuitem>Start with default settings</guimenuitem> startet die
-				interaktive, graphische Installation von UCS. Bei der Installation fragt
-				das System nach einigen Parametern wie Netzwerkeinstellungen,
-				Festplattenpartitionierung und Domäneneinstellungen für das zu
-				installierende UCS-System und führt anschließend die Installation und
-				Konfiguration durch.
+				<guimenuitem>Start with default settings</guimenuitem> startet die interaktive, graphische Installation von UCS.
+				Bei der Installation fragt das System nach einigen Parametern wie Netzwerkeinstellungen, Festplattenpartitionierung und Domäneneinstellungen für das zu installierende UCS-System und führt anschließend die Installation und Konfiguration durch.
 			</simpara>
 		</listitem>
 		<listitem>
@@ -122,7 +118,7 @@
 				<listitem>
 					<simpara>
 					<guimenuitem>Rescue mode</guimenuitem>
-					<!--TODO: Beschreibung der rescue mode-->
+					Der Rettungsmodus ist da, um nicht bootende Systeme wiederherzustellen.
 					</simpara>
 				</listitem>
 				<listitem>
@@ -136,8 +132,8 @@
 		</listitem>
 		<listitem>
 			<simpara>
-				<guimenuitem>accessible dark contrast installer menu</guimenuitem>
-				<!--TODO: beschreibung des dark menus -->
+				<guimenuitem>Accessible dark contrast installer menu</guimenuitem>
+				erlaubt das Starten der Installation in einem dunklen und kontrastreichen Modus.
 			</simpara>
 		</listitem>
 	</itemizedlist>
@@ -379,6 +375,14 @@
 	beanspruchen. Nachfolgend wird das System durch die Installation des GRUB-Bootloaders bootfähig
 	gemacht.
   </para>
+
+  <para>
+		<figure id="installation-reboot">
+			<title>Installation abschließen</title>
+			<graphic scalefit="1" width="80%" align="center" fileref="illustrations50/installer-reboot_de.png"/>
+		</figure>
+		Ein Systemneustart in das frisch installierte System erfolgt anschließend, um darin die Konfiguration abzuschließen.
+  </para>
 </section>
 <section id="installation:Domäneneinstellungen">
   <title>Domäneneinstellungen</title>
@@ -601,7 +605,7 @@
   </para>
   <para>
 	Der Abschluss der Konfiguration muss über die Schaltfläche <guimenu>Fertigstellen</guimenu> bestätigt werden.
-	Das UCS-System wird anschließend auf den ersten Bootvorgang vorbereitet und neugestartet.
+	Das UCS-System wird anschließend auf den ersten vollständigen Bootvorgang vorbereitet und neugestartet.
   </para>
   <para>
 	Das System startet nun von Festplatte. Nach dem Bootvorgang können sich die Benutzer
@@ -704,4 +708,3 @@
   </para>
 </section>
 </chapter>
-<!-- vim: set softtabstop=2 tabstop=2 shiftwidth=2 textwidth=80 noexpandtab : -->
