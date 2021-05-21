@@ -1,3 +1,21 @@
+univention-portal (4.0.5-53) unstable; urgency=medium
+
+  * Bug #53293: Remove Blog tile
+
+ -- Dirk Wiesenthal <wiesenthal@univention.de>  Thu, 20 May 2021 11:43:18 +0200
+
+univention-portal (4.0.5-52) unstable; urgency=medium
+
+  * Bug #53289: Remove empty value from portal syntax
+
+ -- Dirk Wiesenthal <wiesenthal@univention.de>  Wed, 19 May 2021 15:43:48 +0200
+
+univention-portal (4.0.5-51) unstable; urgency=medium
+
+  * Bug #53285: Add cn=services to cn=portal on 4.4 update
+
+ -- Dirk Wiesenthal <wiesenthal@univention.de>  Tue, 18 May 2021 22:19:37 +0200
+
 univention-portal (4.0.5-50) unstable; urgency=medium
 
   * Bug #53161: Updated portals will have linkTarget newwindow; UMC module

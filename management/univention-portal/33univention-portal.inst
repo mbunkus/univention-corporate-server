@@ -32,7 +32,7 @@
 # <https://www.gnu.org/licenses/>.
 ## joinscript api: bindpwdfile
 
-VERSION=24
+VERSION=25
 
 . /usr/share/univention-join/joinscripthelper.lib
 . /usr/share/univention-lib/umc.sh
@@ -240,7 +240,6 @@ if [ "$role" = "domaincontroller_master" ]; then
 		--position "cn=category,cn=portals,cn=univention,$ldap_base" \
 		--set name=domain-admin \
 		--append entries="cn=umc-domain,cn=entry,cn=portals,cn=univention,$ldap_base" \
-		--append entries="cn=univentionblog,cn=entry,cn=portals,cn=univention,$ldap_base" \
 		--append displayName='"en_US" "Administration"' \
 		--append displayName='"de_DE" "Verwaltung"' || die
 
@@ -306,6 +305,7 @@ if [ "$role" = "domaincontroller_master" ]; then
 			--dn "cn=domain,cn=portal,cn=portals,cn=univention,$ldap_base" \
 			--append menuLinks="cn=certificates,cn=folder,cn=portals,cn=univention,$ldap_base" \
 			--append menuLinks="cn=help,cn=folder,cn=portals,cn=univention,$ldap_base" \
+			--append categories="cn=domain-service,cn=category,cn=portals,cn=univention,$ldap_base" \
 			--set showUmc=TRUE || die
 	fi
 fi

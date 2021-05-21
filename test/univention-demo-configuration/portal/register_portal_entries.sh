@@ -30,6 +30,10 @@
 eval "$(ucr shell)"
 DIR="$(dirname $0)"
 
+univention-directory-manager portals/entry modify \
+	--dn "cn=login-ucs,cn=entry,cn=portals,cn=univention,$ldap_base" \
+	--set backgroundColor="var(--color-grey0)"
+
 univention-directory-manager portals/category remove --ignore_not_exists \
 	--dn "cn=demo-service,cn=category,cn=portals,cn=univention,$ldap_base"
 univention-directory-manager portals/category create \
@@ -44,7 +48,6 @@ univention-directory-manager portals/category remove --ignore_not_exists \
 univention-directory-manager portals/category create \
 	--position "cn=category,cn=portals,cn=univention,$ldap_base" \
 	--set name=demo-admin \
-	--append entries="cn=univentionblog,cn=entry,cn=portals,cn=univention,$ldap_base" \
 	--append displayName='"en_US" "Administration"' \
 	--append displayName='"de_DE" "Verwaltung"'
 
@@ -53,13 +56,12 @@ univention-directory-manager portals/portal remove --ignore_not_exists \
 univention-directory-manager portals/portal create \
 	--position "cn=portal,cn=portals,cn=univention,$ldap_base" \
 	--set name=demo \
+	--set logo="$(base64 "$DIR/ucs.svg")" \
 	--append menuLinks="cn=certificates,cn=folder,cn=portals,cn=univention,$ldap_base" \
 	--append menuLinks="cn=help,cn=folder,cn=portals,cn=univention,$ldap_base" \
 	--append categories="cn=demo-service,cn=category,cn=portals,cn=univention,$ldap_base" \
 	--append categories="cn=demo-admin,cn=category,cn=portals,cn=univention,$ldap_base" \
-	--append displayName='"en_US" "Univention Portal"' \
-	--append displayName='"de_DE" "Univention Portal"' \
-	--append displayName='"fr_FR" "Portail Univention"' \
+	--append displayName='"en_US" "UCS"' \
 	--set showUmc=TRUE
 
 create_app_entry () {
@@ -102,44 +104,49 @@ create_app_entry \
 	ownCloud \
 	"Cloud solution for data and file sync and share" \
 	"Cloud Lösung für Filesync und -share" \
-	"#1d2d44"
+	"#041E42"
 
 create_app_entry \
 	nextcloud nextcloud \
 	Nextcloud \
 	"Secure storing, syncing &amp; sharing data in and outside your organization" \
-	"Daten sicher speichern, synchronisieren &amp; teilen in und außerhalb Ihrer Organisation"
+	"Daten sicher speichern, synchronisieren &amp; teilen in und außerhalb Ihrer Organisation" \
+	"#0082c9"
 
 create_app_entry \
 	kopano kopano-core \
 	Kopano \
 	"Kopano Sharing &amp; Communication Software for Professionals" \
-	"Kopano Sharing &amp; Communication Software für Profis"
+	"Kopano Sharing &amp; Communication Software für Profis" \
+	"#424242"
 
 create_app_entry \
 	ox oxseforucs \
 	"OX App Suite" \
 	"Groupware, email and communication platform" \
 	"Groupware, E-Mail- und Kommunikationsplattform" \
-	"#223e58"
+	"#284b73"
 
 create_app_entry \
 	collabora collabora-online \
 	"Collabora Online" \
 	"Powerful LibreOffice-based online office suite" \
-	"Leistungsstarke LibreOffice-basierte Online-Office-Suite"
+	"Leistungsstarke LibreOffice-basierte Online-Office-Suite" \
+	"#504999"
 
 create_app_entry \
 	onlyoffice onlyoffice-ds-integration \
 	"ONLYOFFICE Docs Enterprise Edition" \
 	"Feature-rich office suite on your own server" \
-	"Leistungsstarke Büro- und Produktivitäts-Suite auf Ihrem eigenen Server"
+	"Leistungsstarke Büro- und Produktivitäts-Suite auf Ihrem eigenen Server" \
+	"#14416F"
 
 create_app_entry \
 	openproject openproject \
 	OpenProject \
 	"Open Source Project Management. Powerful. Easy-to-use. Enterprise class." \
-	"Open Source Projekt-Management Software und Team Kollaboration"
+	"Open Source Projekt-Management Software und Team Kollaboration" \
+	"#1a67a3"
 
 create_admin_entry () {
 	cn=demo-$1
@@ -175,19 +182,12 @@ create_admin_entry () {
 		--append entries="$dn"
 }
 
-create_admin_entry \
-	help \
-	"Univention Help" \
-	"The Univention community for discussion and help" \
-	"Die Univention-Community für Diskussion und Hilfe" \
-	"https://help.univention.com"
-
-create_admin_entry \
-	sdb \
-	"Univention SDB" \
-	"The Univention support database" \
-	"Die Univention-Support-Datenbank" \
-	"http://sdb.univention.de"
+# create_admin_entry \
+# 	sdb \
+# 	"Univention SDB" \
+# 	"The Univention support database" \
+# 	"Die Univention-Support-Datenbank" \
+# 	"http://sdb.univention.de"
 
 cat "$DIR/domain-portal.ldif" | univention-config-registry filter | ldapmodify -D "$ldap_hostdn" -y /etc/machine.secret
 cp "$DIR/portal.css" /usr/share/univention-portal/css/custom.css
