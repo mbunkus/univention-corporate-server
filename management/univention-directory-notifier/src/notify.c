@@ -56,6 +56,8 @@ extern NotifyId_t notify_last_id;
 extern Notify_t notify;
 extern long long notifier_lock_count;
 extern long long notifier_lock_time;
+extern long long notifier_ldapi_count;
+extern long long notifier_ldapi_time;
 extern void unset_listener_callback ();
 
 extern unsigned long SCHEMA_ID;
@@ -315,6 +317,7 @@ static void notify_dump_to_ldap(NotifyEntry_t *trans) {
 	LDAPControl **serverctrls = NULL;
 	LDAPControl **clientctrls = NULL;
 	int rc;
+	int count = 0;
 	struct sigaction oldact, act = {
 		.sa_handler = SIG_IGN,
 		.sa_flags = 0,
@@ -343,9 +346,17 @@ reopen:
 		const char mechanism[] = "EXTERNAL";
 		unsigned flags = LDAP_SASL_QUIET;
 		void *defaults = NULL;
-		if ((rc = ldap_sasl_interactive_bind_s(ld, who, mechanism, serverctrls, clientctrls, flags, sasl_proc, defaults)) != LDAP_SUCCESS) {
-			univention_debug(UV_DEBUG_TRANSFILE, UV_DEBUG_ERROR, "ldap_sasl_interactive_bind_s(): %s", ldap_err2string(rc));
-			abort();
+		for (;;) {
+			rc = ldap_sasl_interactive_bind_s(ld, who, mechanism, serverctrls, clientctrls, flags, sasl_proc, defaults);
+			if (rc == LDAP_SUCCESS)
+				break;
+			univention_debug(UV_DEBUG_TRANSFILE, UV_DEBUG_ERROR, "ldap_sasl_interactive_bind_s(): %s (count=%d)", ldap_err2string(rc), count);
+			count++;
+			if (count > notifier_ldapi_count) {
+				univention_debug(UV_DEBUG_TRANSFILE, UV_DEBUG_ERROR, "Could not bind to LDAP server via LDAPI; exit");
+				abort();
+			}
+			usleep(notifier_ldapi_time);
 		}
 	}
 

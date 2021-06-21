@@ -60,6 +60,8 @@ long SCHEMA_ID;
 long long notifier_cache_size=1000;
 long long notifier_lock_count=100;
 long long notifier_lock_time=100;
+long long notifier_ldapi_count=10;
+long long notifier_ldapi_time=1000;
 
 void usage(void)
 {
