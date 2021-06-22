@@ -437,6 +437,8 @@ wait_for_repo_server () {
 
 install_ucs_test () {
 	wait_for_repo_server || return 1
+	echo -e "deb [trusted=yes] http://omar.knut.univention.de/build2/ ucs_5.0-0-fbest-5.0/all/" >> /etc/apt/sources.list
+	echo -e "deb [trusted=yes] http://omar.knut.univention.de/build2/ ucs_5.0-0-fbest-5.0/\$(ARCH)/" >> /etc/apt/sources.list
 	install_with_unmaintained ucs-test || return 1
 }
 
