@@ -819,7 +819,6 @@ define([
 				}, {
 					type: TextBox,
 					name: 'kerberos/realm',
-					disabled: true,
 					label: _('Kerberos realm') +
 						' (<a href="javascript:void(0);" onclick="require(\'dijit/registry\').byId(\'{id}\').showTooltip(event, \'kerberos/realm\');">' +
 						_('more information') +
