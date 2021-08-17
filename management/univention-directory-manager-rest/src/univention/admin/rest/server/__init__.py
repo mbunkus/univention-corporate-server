@@ -59,7 +59,7 @@ from univention.management.console.config import ucr
 import univention.lib.i18n
 import univention.debug as ud
 
-manager = multiprocessing.Manager()
+#manager = multiprocessing.Manager()
 
 
 class Server(tornado.web.RequestHandler):
@@ -71,14 +71,21 @@ class Server(tornado.web.RequestHandler):
 	TODO: Implement management of modules
 	"""
 
-	PROCESSES = {}  # manager.dict()
+	PROCESSES = {}
+	PORT = {}  # manager.dict()
 
 	def set_default_headers(self):
 		self.set_header('Server', 'Univention/1.0')  # TODO:
 
 	@tornado.gen.coroutine
 	def get(self):
-		accepted_language, socket = self.select_language()
+		def prepare_curl(curl):
+			if tcp_port:
+				curl.setopt(pycurl.PORT, tcp_port)
+				curl.setopt(pycurl.RESOLVE, ['%s:127.0.01' % (self.request.host,)])
+			elif unix_socket:
+				curl.setopt(pycurl.UNIX_SOCKET_PATH, unix_socket)
+		accepted_language, unix_socket, tcp_port = self.select_language()
 		request = tornado.httpclient.HTTPRequest(
 			self.request.full_url(),
 			method=self.request.method,
@@ -88,7 +95,7 @@ class Server(tornado.web.RequestHandler):
 			follow_redirects=False,
 			connect_timeout=20.0,  # TODO: raise value?
 			request_timeout=int(ucr.get('directory/manager/rest/response-timeout', '310')) + 1,
-			prepare_curl_callback=lambda curl: curl.setopt(pycurl.UNIX_SOCKET_PATH, socket),
+			prepare_curl_callback=prepare_curl,
 		)
 		client = tornado.httpclient.AsyncHTTPClient()
 		try:
@@ -168,13 +175,12 @@ class Server(tornado.web.RequestHandler):
 			server.bind(args.port, args.interface)
 		if args.unix_socket:
 			socket = bind_unix_socket(args.unix_socket)
-			server._pending_sockets.append(socket)
-			# server.add_socket(socket)
+			server.add_socket(socket)
 
-		cls.start_processes(args.cpus)
+		cls.start_processes(args.cpus, args.port)
 
 		try:
-			child_id = server.start(int(ucr.get('directory/manager/rest/server/cpus', 1)))
+			child_id = server.start(int(ucr.get('directory/manager/rest/server/cpus', 1)), 0)
 			logger.info('Started child %s', child_id)
 			cls.register_signal_handlers()
 			tornado.ioloop.IOLoop.current().start()
@@ -190,23 +196,29 @@ class Server(tornado.web.RequestHandler):
 	def select_language(self):
 		accepted_language = self.get_browser_locale().code
 		for locale in (accepted_language, 'en_US', 'de_DE'):
-			socket = self.get_socket_for_locale(locale)
-			if os.path.exists(socket):
-				return locale.replace('_', '-'), socket
-		return 'C', '/dev/null'
+			unix_socket, tcp_port = self.get_socket_for_locale(locale)
+			if os.path.exists(unix_socket):
+				return locale.replace('_', '-'), unix_socket, tcp_port
+		return 'C', '/dev/null', None
 
 	@classmethod
-	def get_socket_for_locale(self, language):
+	def get_socket_for_locale(cls, language):
 		locale = univention.lib.i18n.Locale(language)
 		territory = locale.territory or {'de': 'DE', 'en': 'US'}.get(locale.language)
-		return '/var/run/univention-directory-manager-rest-%s-%s.socket' % (locale.language, territory.lower())
+		unix_socket = '/var/run/univention-directory-manager-rest-%s-%s.socket' % (locale.language, territory.lower())
+		return unix_socket, cls.PORT.get(unix_socket)
 
 	@classmethod
-	def start_processes(cls, num_processes=1):
+	def start_processes(cls, num_processes=1, start_port=9979):
+		ports = iter(range(start_port + 1, start_port + 100))
 		for language in ucr.get('locale', 'de_DE.UTF-8:UTF-8 en_US.UTF-8:UTF-8').split():
 			language = language.split(':', 1)[0]
-			socket = cls.get_socket_for_locale(language)
-			cls.PROCESSES[language] = tornado.process.Subprocess([sys.executable, '-m', 'univention.admin.rest', '-s', socket, '-l', language, '-c', str(num_processes), 'run'], stdout=sys.stdout, stderr=sys.stderr)
+			unix_socket, tcp_port = cls.get_socket_for_locale(language)
+			cls.PORT[unix_socket] = tcp_port = next(ports)
+			cmd = [sys.executable, '-m', 'univention.admin.rest', '-s', unix_socket, '-l', language, '-c', str(num_processes + 2)]
+			if True or num_processes != 1:
+				cmd.extend(['-p', str(tcp_port)])
+			cls.PROCESSES[language] = tornado.process.Subprocess(cmd + ['run'], stdout=sys.stdout, stderr=sys.stderr)
 
 	@classmethod
 	def register_signal_handlers(cls):

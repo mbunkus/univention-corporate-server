@@ -40,6 +40,7 @@ import os
 import time
 import locale
 import signal
+import socket
 from functools import partial
 import argparse
 import traceback
@@ -84,12 +85,17 @@ class Server(object):
 
 		server = HTTPServer(application)
 		if args.port:
-			server.bind(args.port)
+			server.bind(args.port, '127.0.0.1')
 		if args.unix_socket:
-			socket = bind_unix_socket(args.unix_socket)
-			server._pending_sockets.append(socket)
-			#server.add_socket(socket)
-		server.start(args.cpus)
+			sock = bind_unix_socket(args.unix_socket)
+			sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+			server._pending_sockets.append(sock)
+#			server.add_socket(sock)
+		try:
+			server.start(args.cpus, 0)
+		except RuntimeError as exc:
+			CORE.info('Stopped process: %s' % (exc,))
+			raise SystemExit(0)
 
 		signal.signal(signal.SIGTERM, partial(self.signal_handler_stop, server))
 		signal.signal(signal.SIGINT, partial(self.signal_handler_stop, server))

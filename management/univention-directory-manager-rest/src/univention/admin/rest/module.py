@@ -105,7 +105,9 @@ from univention.lib.i18n import Translation
 
 _ = Translation('univention-management-console-module-udm').translate
 
-manager = multiprocessing.Manager()
+import argparse
+manager = argparse.Namespace() # multiprocessing.Manager()
+manager.dict = dict
 MAX_WORKERS = 35
 
 if 422 not in tornado.httputil.responses:
