@@ -40,7 +40,9 @@ import os
 import sys
 import json
 import signal
+import logging
 import argparse
+import multiprocessing
 
 import tornado.httpserver
 import tornado.ioloop
@@ -49,12 +51,15 @@ import tornado.web
 import tornado.httpclient
 import tornado.httputil
 import tornado.process
+from tornado.netutil import bind_unix_socket
 
 import pycurl
 
 from univention.management.console.config import ucr
 import univention.lib.i18n
 import univention.debug as ud
+
+manager = multiprocessing.Manager()
 
 
 class Server(tornado.web.RequestHandler):
@@ -66,7 +71,7 @@ class Server(tornado.web.RequestHandler):
 	TODO: Implement management of modules
 	"""
 
-	PROCESSES = {}
+	PROCESSES = {}  # manager.dict()
 
 	def set_default_headers(self):
 		self.set_header('Server', 'Univention/1.0')  # TODO:
@@ -137,20 +142,50 @@ class Server(tornado.web.RequestHandler):
 	def main(cls):
 		parser = argparse.ArgumentParser(prog='%s -m univention.admin.rest.server' % (sys.executable,))
 		parser.add_argument('-d', '--debug', type=int, default=2)
+		parser.add_argument('-p', '--port', help='Bind to a TCP port', default=int(ucr.get('directory/manager/rest/server/port', 9979)))
+		parser.add_argument('-s', '--unix-socket', help='Bind to a UNIX socket')
+		parser.add_argument('-i', '--interface', help='Bind to specified interface/address', default=ucr.get('directory/manager/rest/server/address', '127.0.0.1'))
+		parser.add_argument('-c', '--cpus', type=int, default=int(ucr.get('directory/manager/rest/cpus', 1)), help='How many processes should be forked')
 		args = parser.parse_args()
 		ud.init('stdout', ud.FLUSH, ud.NO_FUNCTION)
 		ud.set_level(ud.MAIN, args.debug)
 		tornado.httpclient.AsyncHTTPClient.configure('tornado.curl_httpclient.CurlAsyncHTTPClient')
 		tornado.locale.load_gettext_translations('/usr/share/locale', 'univention-management-console-module-udm')
-		cls.start_processes()
-		cls.register_signal_handlers()
+		os.umask(0o077)  # FIXME: should probably be changed, this is what UMC sets
+
+		channel = logging.StreamHandler()
+		channel.setFormatter(tornado.log.LogFormatter(fmt='%(color)s%(asctime)s  %(levelname)10s      (%(process)9d) :%(end_color)s %(message)s', datefmt='%d.%m.%y %H:%M:%S'))
+		logger = logging.getLogger()
+		logger.setLevel(logging.INFO)
+		logger.addHandler(channel)
+
 		app = tornado.web.Application([
 			(r'.*', cls),
 		], serve_traceback=ucr.is_true('directory/manager/rest/show-tracebacks', True),
 		)
-		app.listen(int(ucr.get('directory/manager/rest/server/port', 9979)), ucr.get('directory/manager/rest/server/address', '127.0.0.1'))
-		ioloop = tornado.ioloop.IOLoop.instance()
-		ioloop.start()
+		server = tornado.httpserver.HTTPServer(app)
+		if args.port:
+			server.bind(args.port, args.interface)
+		if args.unix_socket:
+			socket = bind_unix_socket(args.unix_socket)
+			server._pending_sockets.append(socket)
+			# server.add_socket(socket)
+
+		cls.start_processes(args.cpus)
+
+		try:
+			child_id = server.start(int(ucr.get('directory/manager/rest/server/cpus', 1)))
+			logger.info('Started child %s', child_id)
+			cls.register_signal_handlers()
+			tornado.ioloop.IOLoop.current().start()
+		except RuntimeError as exc:
+			logger.info('Stopped process: %s', exc)
+			cls.signal_handler_stop(signal.SIGTERM, None)
+			return
+		except Exception:
+			raise
+			cls.signal_handler_stop(signal.SIGTERM, None)
+			raise
 
 	def select_language(self):
 		accepted_language = self.get_browser_locale().code
@@ -167,11 +202,11 @@ class Server(tornado.web.RequestHandler):
 		return '/var/run/univention-directory-manager-rest-%s-%s.socket' % (locale.language, territory.lower())
 
 	@classmethod
-	def start_processes(cls):
+	def start_processes(cls, num_processes=1):
 		for language in ucr.get('locale', 'de_DE.UTF-8:UTF-8 en_US.UTF-8:UTF-8').split():
 			language = language.split(':', 1)[0]
 			socket = cls.get_socket_for_locale(language)
-			cls.PROCESSES[language] = tornado.process.Subprocess([sys.executable, '-m', 'univention.admin.rest', '-s', socket, '-l', language, 'run'], stdout=sys.stdout, stderr=sys.stderr)
+			cls.PROCESSES[language] = tornado.process.Subprocess([sys.executable, '-m', 'univention.admin.rest', '-s', socket, '-l', language, '-c', str(num_processes), 'run'], stdout=sys.stdout, stderr=sys.stderr)
 
 	@classmethod
 	def register_signal_handlers(cls):

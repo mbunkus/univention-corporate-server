@@ -85,11 +85,12 @@ class Server(object):
 		server = HTTPServer(application)
 		if args.port:
 			server.bind(args.port)
-		server.start(args.cpus)
-
 		if args.unix_socket:
 			socket = bind_unix_socket(args.unix_socket)
-			server.add_socket(socket)
+			server._pending_sockets.append(socket)
+			#server.add_socket(socket)
+		server.start(args.cpus)
+
 		signal.signal(signal.SIGTERM, partial(self.signal_handler_stop, server))
 		signal.signal(signal.SIGINT, partial(self.signal_handler_stop, server))
 		signal.signal(signal.SIGHUP, self.signal_handler_reload)

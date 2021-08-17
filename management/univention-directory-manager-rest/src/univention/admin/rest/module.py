@@ -49,6 +49,7 @@ import binascii
 import datetime
 import traceback
 import functools
+import multiprocessing
 from email.utils import parsedate
 
 import six
@@ -104,6 +105,7 @@ from univention.lib.i18n import Translation
 
 _ = Translation('univention-management-console-module-udm').translate
 
+manager = multiprocessing.Manager()
 MAX_WORKERS = 35
 
 if 422 not in tornado.httputil.responses:
@@ -364,7 +366,8 @@ class ResourceBase(object):
 	pool = ThreadPoolExecutor(max_workers=MAX_WORKERS)
 
 	requires_authentication = True
-	authenticated = {}
+	authenticated = {}  # manager.dict()
+	authenticated_connections = {}
 
 	def force_authorization(self):
 		self.set_header('WWW-Authenticate', 'Basic realm="Univention Management Console"')
@@ -393,7 +396,8 @@ class ResourceBase(object):
 
 	def parse_authorization(self, authorization):
 		if authorization in self.authenticated:
-			(self.request.user_dn, self.request.username, self.ldap_connection, self.ldap_position) = self.authenticated[authorization]
+			(self.request.user_dn, self.request.username) = self.authenticated[authorization]
+			(self.ldap_connection, self.ldap_position) = self.authenticated_connections[authorization]
 			if self.ldap_connection.whoami():
 				return  # the ldap connection is still valid and bound
 		try:
@@ -413,7 +417,8 @@ class ResourceBase(object):
 		if username not in ('cn=admin',):
 			self._auth_check_allowed_groups()
 
-		self.authenticated[authorization] = (self.request.user_dn, self.request.username, self.ldap_connection, self.ldap_position)
+		self.authenticated[authorization] = (self.request.user_dn, self.request.username)
+		self.authenticated_connections[authorization] = (self.ldap_connection, self.ldap_position)
 
 	def _auth_check_allowed_groups(self):
 		allowed_groups = [value for key, value in ucr.items() if key.startswith('directory/manager/rest/authorized-groups/')]
@@ -2316,7 +2321,7 @@ class FormBase(object):
 
 class Objects(FormBase, ReportingBase):
 
-	search_sessions = {}
+	search_sessions = manager.dict()
 
 	@sanitize_query_string(
 		position=DNSanitizer(required=False, default=None),
@@ -3463,7 +3468,7 @@ class PolicyResultContainer(PolicyResultBase):
 class Operations(Resource):
 	"""GET /udm/progress/$progress-id (get the progress of a started operation like move, report, maybe add/put?, ...)"""
 
-	queue = {}
+	queue = manager.dict()
 
 	def get(self, progress):
 		progressbars = self.queue.get(self.request.user_dn, {})
