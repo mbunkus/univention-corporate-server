@@ -842,6 +842,68 @@ udm settings/extended_options create "$@" --ignore_exists \
 					</listitem>
 				</varlistentry>
 			</variablelist>
+				<varlistentry>
+					<term>
+						<methodsynopsis>
+							<methodname>hook_ldap_pre_move</methodname>
+							<methodparam><parameter>self</parameter></methodparam>
+							<methodparam><parameter>obj</parameter></methodparam>
+							<methodparam><parameter>new_dn</parameter></methodparam>
+						</methodsynopsis>
+					</term>
+					<listitem>
+						<simpara>
+							This method is called before the object was moved in <acronym>LDAP</acronym>.
+						</simpara>
+					</listitem>
+				</varlistentry>
+			</variablelist>
+				<varlistentry>
+					<term>
+						<methodsynopsis>
+							<methodname>hook_ldap_post_move</methodname>
+							<methodparam><parameter>self</parameter></methodparam>
+							<methodparam><parameter>obj</parameter></methodparam>
+						</methodsynopsis>
+					</term>
+					<listitem>
+						<simpara>
+							This method is called after the object was moved in <acronym>LDAP</acronym>.
+						</simpara>
+					</listitem>
+				</varlistentry>
+			</variablelist>
+				<varlistentry>
+					<term>
+						<methodsynopsis>
+							<methodname>hook_ldap_pre_rename</methodname>
+							<methodparam><parameter>self</parameter></methodparam>
+							<methodparam><parameter>obj</parameter></methodparam>
+							<methodparam><parameter>new_dn</parameter></methodparam>
+						</methodsynopsis>
+					</term>
+					<listitem>
+						<simpara>
+							This method is called before the object was renamed in <acronym>LDAP</acronym>.
+						</simpara>
+					</listitem>
+				</varlistentry>
+			</variablelist>
+				<varlistentry>
+					<term>
+						<methodsynopsis>
+							<methodname>hook_ldap_post_rename</methodname>
+							<methodparam><parameter>self</parameter></methodparam>
+							<methodparam><parameter>obj</parameter></methodparam>
+						</methodsynopsis>
+					</term>
+					<listitem>
+						<simpara>
+							This method is called after the object was renamed in <acronym>LDAP</acronym>.
+						</simpara>
+					</listitem>
+				</varlistentry>
+			</variablelist>
 			<para>
 				The following example implements a hook, which removes the object-class <literal>univentionFreeAttributes</literal> if the property <literal>isSampleUser</literal> is no longer set.
 			</para>
