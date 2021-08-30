@@ -350,11 +350,7 @@ def password_sync_ucs(connector, key, object):
 	if 'sambaNTPassword' in res[0][1]:
 		pwd = res[0][1]['sambaNTPassword'][0]
 	else:
-		pwd = 'NO PASSWORDXXXXXX'
 		ud.debug(ud.LDAP, ud.WARN, "password_sync_ucs: Failed to get NT Hash from UCS")
-
-	if pwd in ['NO PASSWORDXXXXXX', 'NO PASSWORD*********************']:
-		ud.debug(ud.LDAP, ud.PROCESS, "The sambaNTPassword hash is set to %s. Skip the synchronisation of this hash to AD." % pwd)
 
 	res = connector.lo_ad.lo.search_s(univention.connector.ad.compatible_modstring(object['dn']), ldap.SCOPE_BASE, '(objectClass=*)', ['pwdLastSet', 'objectSid'])
 	pwdLastSet = None
@@ -398,7 +394,9 @@ def password_sync_ucs(connector, key, object):
 	res = ''
 
 	ud.debug(ud.LDAP, ud.INFO, "password_sync_ucs: Hash AD: %s Hash UCS: %s" % (nt_hash, pwd))
-	if not pwd == nt_hash:
+	if pwd in [None, 'NO PASSWORDXXXXXX', 'NO PASSWORD*********************']:
+		ud.debug(ud.LDAP, ud.PROCESS, "The sambaNTPassword hash is set to %s. Skip the synchronisation of this hash to AD." % pwd)
+	elif not pwd == nt_hash:
 		ud.debug(ud.LDAP, ud.INFO, "password_sync_ucs: Hash AD and Hash UCS differ")
 		pwd_set = True
 
