@@ -395,6 +395,12 @@ def password_sync_ucs(connector, key, object):
 
 	ud.debug(ud.LDAP, ud.INFO, "password_sync_ucs: Hash AD: %s Hash UCS: %s" % (nt_hash, pwd))
 	if not pwd or pwd.startswith("NO PASSWORD"):
+		# There are variations of "NO PASSWORD" in customer environments:
+		# 1. "NO PASSWORD*********************" (password_sync_kinit, see below)
+		# 2. "NO PASSWORDXXXXXX"                (old AD-Connector password service?)
+		# 3. "NO PASSWORDXXXXXXX"               (Ticket #2020121821000706)
+		# 4. "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX" (/usr/share/univention-heimdal/kerberos_now)
+		# see https://forge.univention.org/bugzilla/buglist.cgi?longdesc=NO%20PASSWORD&longdesc_type=casesubstring
 		ud.debug(ud.LDAP, ud.PROCESS, "The sambaNTPassword hash is set to %s. Skip the synchronisation of this hash to AD." % pwd)
 	elif pwd != nt_hash:
 		ud.debug(ud.LDAP, ud.INFO, "password_sync_ucs: Hash AD and Hash UCS differ")
