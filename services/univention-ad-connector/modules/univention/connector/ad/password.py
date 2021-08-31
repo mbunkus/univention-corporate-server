@@ -394,9 +394,9 @@ def password_sync_ucs(connector, key, object):
 	res = ''
 
 	ud.debug(ud.LDAP, ud.INFO, "password_sync_ucs: Hash AD: %s Hash UCS: %s" % (nt_hash, pwd))
-	if pwd in [None, 'NO PASSWORDXXXXXX', 'NO PASSWORD*********************']:
+	if not pwd or pwd.startswith("NO PASSWORD"):
 		ud.debug(ud.LDAP, ud.PROCESS, "The sambaNTPassword hash is set to %s. Skip the synchronisation of this hash to AD." % pwd)
-	elif not pwd == nt_hash:
+	elif pwd != nt_hash:
 		ud.debug(ud.LDAP, ud.INFO, "password_sync_ucs: Hash AD and Hash UCS differ")
 		pwd_set = True
 
