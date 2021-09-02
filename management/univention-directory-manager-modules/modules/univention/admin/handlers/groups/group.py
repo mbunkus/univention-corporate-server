@@ -250,18 +250,12 @@ mapping.register('allowedEmailUsers', 'univentionAllowedEmailUsers')
 mapping.register('allowedEmailGroups', 'univentionAllowedEmailGroups')
 
 
-def _case_insensitive_get_item_in_list(dn, list):
-	for element in list:
-		if dn.decode('utf8').lower() == element.decode('utf8').lower():
-			return element
-	return None
-
-
 def _case_insensitive_remove_from_list(dn, list):
 	remove_element = None
 	for element in list:
 		if dn.decode('utf8').lower() == element.decode('utf8').lower():
 			remove_element = element
+			break
 	if remove_element:
 		list.remove(remove_element)
 	return list
@@ -376,29 +370,27 @@ class object(univention.admin.handlers.simpleLdap):
 		ml = []
 		searchResult = self.lo.get(self.dn, attr=['uniqueMember', 'memberUid'])
 		if searchResult:
-			uids = searchResult.get('memberUid', [])
-			members = searchResult.get('uniqueMember', [])
+			uids = {uid.decode('utf8').lower() for uid in searchResult.get('memberUid', [])}
+			members = {dn.decode('utf8').lower() for dn in searchResult.get('uniqueMember', [])}
 		else:
-			uids = []
-			members = []
+			uids = set()
+			members = set()
 
-		case_insensitive_uids = {uid.decode('utf8').lower() for uid in uids}
-		add_uidlist = [uid for uid in uidlist if uid.decode('utf8').lower() not in case_insensitive_uids]
+		add_uidlist = [uid for uid in uidlist if uid.decode('utf8').lower() not in uids]
 		if add_uidlist:
 			ml.append(('memberUid', '', add_uidlist))
 
-		case_insensitive_members = {dn.decode('utf8').lower() for dn in members}
-		add_memberdnlist = [dn for dn in memberdnlist if dn.decode('utf8').lower() not in case_insensitive_members]
+		add_memberdnlist = [dn for dn in memberdnlist if dn.decode('utf8').lower() not in members]
 		if add_memberdnlist:
 			ml.append(('uniqueMember', '', add_memberdnlist))
 
 		if ml:
 			try:
 				return self.lo.modify(self.dn, ml)
-			except ldap.NO_SUCH_OBJECT as msg:
-				raise univention.admin.uexceptions.noObject
-			except ldap.INSUFFICIENT_ACCESS as msg:
-				raise univention.admin.uexceptions.permissionDenied
+			except ldap.NO_SUCH_OBJECT:
+				raise univention.admin.uexceptions.noObject(self.dn)
+			except ldap.INSUFFICIENT_ACCESS:
+				raise univention.admin.uexceptions.permissionDenied()
 			except ldap.LDAPError as msg:
 				raise univention.admin.uexceptions.ldapError(msg[0]['desc'])
 
@@ -409,29 +401,27 @@ class object(univention.admin.handlers.simpleLdap):
 		ml = []
 		searchResult = self.lo.get(self.dn, attr=['uniqueMember', 'memberUid'])
 		if searchResult:
-			uids = searchResult.get('memberUid', [])
-			members = searchResult.get('uniqueMember', [])
+			uids = {uid.decode('utf8').lower() for uid in searchResult.get('memberUid', [])}
+			members = {dn.decode('utf8').lower() for dn in searchResult.get('uniqueMember', [])}
 		else:
-			uids = []
-			members = []
+			uids = set()
+			members = set()
 
-		case_insensitive_uids = {uid.decode('utf8').lower() for uid in uids}
-		remove_uidlist = [uid for uid in uidlist if uid.decode('utf8').lower() in case_insensitive_uids]
+		remove_uidlist = [uid for uid in uidlist if uid.decode('utf8').lower() in uids]
 		if remove_uidlist:
 			ml.append(('memberUid', remove_uidlist, ''))
 
-		case_insensitive_members = {dn.decode('utf8').lower() for dn in members}
-		remove_memberdnlist = [dn for dn in memberdnlist if dn.decode('utf8').lower() not in case_insensitive_members]
+		remove_memberdnlist = [dn for dn in memberdnlist if dn.decode('utf8').lower() not in members]
 		if remove_memberdnlist:
 			ml.append(('uniqueMember', remove_memberdnlist, ''))
 
 		if ml:
 			try:
 				return self.lo.modify(self.dn, ml, ignore_license=ignore_license)
-			except ldap.NO_SUCH_OBJECT as msg:
-				raise univention.admin.uexceptions.noObject
-			except ldap.INSUFFICIENT_ACCESS as msg:
-				raise univention.admin.uexceptions.permissionDenied
+			except ldap.NO_SUCH_OBJECT:
+				raise univention.admin.uexceptions.noObject(self.dn)
+			except ldap.INSUFFICIENT_ACCESS:
+				raise univention.admin.uexceptions.permissionDenied()
 			except ldap.LDAPError as msg:
 				raise univention.admin.uexceptions.ldapError(msg[0]['desc'])
 
@@ -762,14 +752,14 @@ class object(univention.admin.handlers.simpleLdap):
 		# self.lo.modify( group, [ ( 'memberUid', uids, newuids ) ] )
 
 	@staticmethod
-	def __case_insensitive_in_list(dn, a_list):
-		case_insensitive_list = (e.decode('utf8').lower() for e in a_list)
+	def __case_insensitive_in_list(dn, members):
+		case_insensitive_list = (m.decode('utf8').lower() for m in members)
 		return dn.decode('utf8').lower() in case_insensitive_list
 
 	@staticmethod
-	def __case_insensitive_remove_from_list(dn, a_list):
+	def __case_insensitive_remove_from_list(dn, members):
 		dn_lower = dn.decode('utf8').lower()
-		return [e for e in a_list if e.decode('utf8').lower() != dn_lower]
+		return [m for m in members if m.decode('utf8').lower() != dn_lower]
 
 	def check_for_group_recursion(self):
 		# perform check only if membership of groups has changed
