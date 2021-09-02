@@ -411,7 +411,7 @@ class object(univention.admin.handlers.simpleLdap):
 		if remove_uidlist:
 			ml.append(('memberUid', remove_uidlist, ''))
 
-		remove_memberdnlist = [dn for dn in memberdnlist if dn.decode('utf8').lower() not in members]
+		remove_memberdnlist = [dn for dn in memberdnlist if dn.decode('utf8').lower() in members]
 		if remove_memberdnlist:
 			ml.append(('uniqueMember', remove_memberdnlist, ''))
 
