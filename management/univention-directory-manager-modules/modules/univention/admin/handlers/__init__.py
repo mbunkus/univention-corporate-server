@@ -1366,7 +1366,7 @@ class simpleLdap(object):
 			self.call_udm_property_hook('hook_ldap_pre_rename', self, exc.args[1])  # must be called before _ldap_pre_rename because users/* call self.move() in there!
 			self._ldap_pre_rename(exc.args[1])
 			self.dn = self.lo.modify(self.dn, ml, ignore_license=ignore_license, serverctrls=serverctrls, response=response)
-			self._ldap_post_rename(exc.args[1])
+			self._ldap_post_rename(exc.args[0])
 			self.call_udm_property_hook('hook_ldap_post_rename', self)
 		if ml:
 			self._write_admin_diary_modify()
