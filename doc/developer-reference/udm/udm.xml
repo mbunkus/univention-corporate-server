@@ -841,7 +841,6 @@ udm settings/extended_options create "$@" --ignore_exists \
 						</simpara>
 					</listitem>
 				</varlistentry>
-			</variablelist>
 				<varlistentry>
 					<term>
 						<methodsynopsis>
@@ -857,7 +856,6 @@ udm settings/extended_options create "$@" --ignore_exists \
 						</simpara>
 					</listitem>
 				</varlistentry>
-			</variablelist>
 				<varlistentry>
 					<term>
 						<methodsynopsis>
@@ -872,7 +870,6 @@ udm settings/extended_options create "$@" --ignore_exists \
 						</simpara>
 					</listitem>
 				</varlistentry>
-			</variablelist>
 				<varlistentry>
 					<term>
 						<methodsynopsis>
@@ -888,7 +885,6 @@ udm settings/extended_options create "$@" --ignore_exists \
 						</simpara>
 					</listitem>
 				</varlistentry>
-			</variablelist>
 				<varlistentry>
 					<term>
 						<methodsynopsis>
